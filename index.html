@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pattiboard" />
+  <meta name="theme-color" content="#0f0c08" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>Pattiboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0f0c08; --surface:#1a1610; --card:#221d15; --card2:#2a2318;
+      --gold:#c9a84c; --gold-lt:#f0c060; --gold-dim:#7a6020;
+      --red:#c0392b; --red-dim:#7a1a10;
+      --green:#27ae60; --green-dim:#145a32;
+      --orange:#e67e22;
+      --text:#e8dcc8; --muted:#7a6e5e; --border:#3a3020; --radius:12px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+    #app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;overflow-x:hidden;}
+
+    .screen{display:none;padding:20px 16px 70px;animation:fadeIn .22s ease;}
+    .screen.active{display:block;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Home */
+    .home-header{text-align:center;padding:40px 0 28px;position:relative;}
+    .home-header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,#c9a84c18,transparent);pointer-events:none;}
+    .suits{font-size:22px;letter-spacing:10px;color:var(--gold);margin-bottom:10px;}
+    .suits .rs{color:#c0392b;}
+    h1.app-title{font-family:'Playfair Display',serif;font-size:38px;font-weight:900;color:var(--gold-lt);letter-spacing:1px;text-shadow:0 2px 20px #b8860b55;line-height:1;}
+    .app-subtitle{font-size:11px;color:var(--muted);letter-spacing:4px;text-transform:uppercase;margin-top:6px;}
+
+    /* Buttons */
+    .btn-primary{display:block;width:100%;padding:15px;background:linear-gradient(135deg,#b8860b,#daa520,#f0c060);color:#0f0c08;border:none;border-radius:var(--radius);font-size:16px;font-weight:700;font-family:'Lato',sans-serif;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 20px #b8860b44;transition:transform .12s;}
+    .btn-primary:active{transform:scale(.98);}
+    .btn-ghost{display:block;width:100%;padding:12px;background:transparent;color:var(--gold);border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:'Lato',sans-serif;cursor:pointer;margin-top:10px;transition:border-color .15s,background .15s;}
+    .btn-ghost:hover{border-color:var(--gold-dim);background:#c9a84c0a;}
+    .btn-danger{display:block;width:100%;padding:12px;background:transparent;color:var(--red);border:1px solid #c0392b44;border-radius:var(--radius);font-size:14px;font-family:'Lato',sans-serif;cursor:pointer;margin-top:10px;}
+    .btn-back{background:transparent;border:none;color:var(--gold);font-size:15px;font-family:'Lato',sans-serif;cursor:pointer;padding:6px 0;margin-bottom:14px;display:inline-flex;align-items:center;gap:6px;}
+
+    /* Labels */
+    .section-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;margin-top:24px;}
+    .page-title{font-family:'Playfair Display',serif;font-size:26px;color:var(--gold-lt);margin-bottom:20px;}
+    .field-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;display:block;}
+
+    /* Home cards */
+    .game-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s;}
+    .game-card:hover{border-color:var(--gold-dim);}
+    .game-card-body{flex:1;min-width:0;}
+    .game-card-players{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .game-card-meta{font-size:12px;color:var(--muted);margin-top:3px;}
+    .btn-icon{background:transparent;border:none;color:var(--muted);font-size:17px;cursor:pointer;padding:6px 8px;border-radius:6px;flex-shrink:0;transition:color .15s;}
+    .btn-icon:hover{color:var(--red);}
+
+    /* New Game form */
+    .player-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+    .input-text{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-size:15px;font-family:'Lato',sans-serif;outline:none;transition:border-color .15s;}
+    .input-text:focus{border-color:var(--gold);}
+    .btn-remove{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;width:38px;height:40px;cursor:pointer;font-size:13px;flex-shrink:0;}
+    .btn-remove:hover{color:var(--red);border-color:var(--red);}
+    .btn-add-player{width:100%;background:transparent;border:1px dashed var(--border);color:var(--gold);border-radius:8px;padding:10px;cursor:pointer;font-family:'Lato',sans-serif;font-size:14px;margin-bottom:18px;}
+    .toggle-row{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+    .toggle-group{display:flex;}
+    .toggle-btn{padding:9px 18px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Lato',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;}
+    .toggle-btn:first-child{border-radius:8px 0 0 8px;}
+    .toggle-btn:last-child{border-radius:0 8px 8px 0;border-left:none;}
+    .toggle-btn.active{background:var(--gold);color:#0f0c08;border-color:var(--gold);font-weight:700;}
+
+    /* Limits grid */
+    .limits-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+    .limit-field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:5px;}
+    .input-num{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:15px;text-align:center;font-family:'Lato',sans-serif;outline:none;-moz-appearance:textfield;}
+    .input-num::-webkit-inner-spin-button,.input-num::-webkit-outer-spin-button{-webkit-appearance:none;}
+    .input-num:focus{border-color:var(--gold);}
+    .limits-hint{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+    .limits-hint strong{color:var(--text);}
+
+    /* Game topbar */
+    .game-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+    .round-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:5px 16px;font-size:13px;color:var(--gold);font-weight:700;}
+    .btn-finish{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:7px 16px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;}
+    .limits-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+    .limit-chip{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);}
+    .limit-chip span{color:var(--gold);font-weight:700;}
+
+    /* Tabs */
+    .tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;}
+    .tab{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:10px 28px;cursor:pointer;font-family:'Lato',sans-serif;font-size:14px;font-weight:700;margin-bottom:-2px;transition:color .15s,border-color .15s;letter-spacing:.5px;}
+    .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+    /* Entry blocks */
+    .entry-player-block{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;transition:border-color .2s,background .2s;}
+    .entry-player-block.is-winner{border-color:var(--green-dim);background:#0e2318;}
+    .entry-player-block.is-bust{border-color:var(--red-dim);background:#2a1210;}
+    .entry-player-block.is-busted-out{border-color:#2a2318;background:#15110d;opacity:.65;}
+    .entry-player-block.is-reentered{border-color:#7a5010;background:#1e1608;}
+
+    .entry-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+    .entry-name{flex:1;font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .entry-total{font-size:12px;color:var(--muted);flex-shrink:0;}
+
+    .status-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:1px;flex-shrink:0;}
+    .badge-out{background:#c0392b22;color:var(--red);border:1px solid #c0392b44;}
+    .badge-re{background:#e67e2222;color:var(--orange);border:1px solid #e67e2244;}
+
+    .entry-score-row{display:flex;align-items:center;gap:7px;}
+    .input-score{width:76px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 6px;color:var(--text);font-size:20px;text-align:center;font-family:'Lato',sans-serif;outline:none;-moz-appearance:textfield;flex-shrink:0;}
+    .input-score::-webkit-inner-spin-button,.input-score::-webkit-outer-spin-button{-webkit-appearance:none;}
+    .input-score:focus{border-color:var(--gold);}
+    .input-score:disabled{opacity:.3;cursor:not-allowed;}
+
+    .btn-won{flex:1;padding:10px 6px;background:#0e2318;border:1px solid var(--green-dim);color:var(--green);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .btn-won.sel{background:var(--green);color:#071208;border-color:var(--green);}
+    .btn-won:disabled{opacity:.3;cursor:not-allowed;}
+    .btn-bust-r{flex:1;padding:10px 6px;background:#2a1210;border:1px solid var(--red-dim);color:var(--red);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .btn-bust-r.sel{background:var(--red);color:#fff;border-color:var(--red);}
+    .btn-bust-r:disabled{opacity:.3;cursor:not-allowed;}
+
+    .busted-out-msg{font-size:13px;color:var(--muted);text-align:center;padding:6px 0;}
+    .btn-reenter{margin-top:10px;width:100%;padding:9px;background:transparent;border:1px dashed #7a5010;color:var(--orange);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;cursor:pointer;transition:background .15s;}
+    .btn-reenter:hover{background:#e67e2210;}
+
+    /* Scores tab */
+    .leaderboard{display:flex;flex-direction:column;gap:8px;}
+    .leader-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:var(--card);border:1px solid var(--border);}
+    .leader-row.first{background:linear-gradient(135deg,#b8860b18,#ffd70014);border-color:var(--gold-dim);}
+    .leader-row.out{opacity:.5;}
+    .rank{font-size:18px;width:30px;text-align:center;flex-shrink:0;}
+    .lb-name{flex:1;font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .lb-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+    .lb-score{font-size:22px;font-weight:700;color:var(--gold);font-family:'Playfair Display',serif;}
+
+    /* Table */
+    .table-wrap{overflow-x:auto;margin-top:20px;border-radius:10px;border:1px solid var(--border);}
+    table{border-collapse:collapse;width:100%;font-size:12px;}
+    th{background:var(--surface);color:var(--muted);padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700;}
+    td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--border);color:var(--text);}
+    tr:last-child td{border-bottom:none;}
+    tr.total-row td{color:var(--gold);font-weight:700;background:var(--surface);font-size:13px;}
+    .cw{color:var(--green)!important;font-weight:700;}
+    .cb{color:var(--red)!important;font-weight:700;}
+    .cr{color:var(--orange)!important;font-weight:700;font-style:italic;}
+
+    /* History */
+    .hist-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;}
+    .hist-card-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+    .hist-card-detail{margin-top:14px;display:none;}
+    .hist-card-detail.open{display:block;}
+    .hist-card-actions{display:flex;gap:6px;align-items:center;}
+    .chevron{color:var(--gold);font-size:12px;transition:transform .2s;}
+    .chevron.open{transform:rotate(180deg);}
+
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:#000000cc;z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+    .modal-overlay.hidden{display:none;}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 0 0;width:100%;max-width:480px;max-height:70vh;overflow:hidden;display:flex;flex-direction:column;animation:slideUp .22s ease;}
+    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);}
+    .modal-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold-lt);}
+    .modal-close{background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer;}
+    .modal-body{overflow-y:auto;padding:14px 16px;}
+    .copy-item{padding:12px 14px;background:var(--card2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+    .copy-item:hover{border-color:var(--gold-dim);}
+    .reentry-info{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--muted);line-height:1.7;}
+    .reentry-info strong{color:var(--orange);}
+
+    /* Toast */
+    #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--gold);color:#0f0c08;padding:10px 26px;border-radius:24px;font-weight:700;font-size:14px;z-index:300;box-shadow:0 4px 20px #00000077;white-space:nowrap;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    .empty{text-align:center;color:var(--muted);padding:48px 0;font-size:15px;}
+    .empty-icon{font-size:40px;margin-bottom:12px;}
+    .divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+    ::-webkit-scrollbar{width:4px;}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div id="screen-home" class="screen active">
+    <div class="home-header">
+      <div class="suits">♠ <span class="rs">♥</span> <span class="rs">♦</span> ♣</div>
+      <h1 class="app-title">Pattiboard</h1>
+      <p class="app-subtitle">Rummy Score Tracker</p>
+    </div>
+    <button class="btn-primary" onclick="goTo('newGame')">+ New Game</button>
+    <div id="active-games-section"></div>
+    <button class="btn-ghost" onclick="goTo('history')">📜 View History</button>
+  </div>
+
+  <!-- NEW GAME -->
+  <div id="screen-newGame" class="screen">
+    <button class="btn-back" onclick="goTo('home')">← Back</button>
+    <h2 class="page-title">New Game</h2>
+    <span class="field-label" id="players-label">Players (2 / 10)</span>
+    <div id="players-list"></div>
+    <button class="btn-add-player" id="btn-add-player" onclick="addPlayerField()">+ Add Player</button>
+    <div class="toggle-row">
+      <span class="field-label" style="margin:0">Scoring:</span>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="toggle-lower" onclick="setScoringMode(true)">Lower wins</button>
+        <button class="toggle-btn" id="toggle-higher" onclick="setScoringMode(false)">Higher wins</button>
+      </div>
+    </div>
+    <span class="field-label">Game Limits</span>
+    <div class="limits-grid">
+      <div class="limit-field">
+        <label>Round Bust</label>
+        <input type="number" inputmode="numeric" class="input-num" id="cfg-round-bust" value="80" min="1" />
+      </div>
+      <div class="limit-field">
+        <label>Game Bust</label>
+        <input type="number" inputmode="numeric" class="input-num" id="cfg-game-bust" value="250" min="1" />
+      </div>
+      <div class="limit-field">
+        <label>Reentry ≤</label>
+        <input type="number" inputmode="numeric" class="input-num" id="cfg-reentry" value="100" min="1" />
+      </div>
+    </div>
+    <p class="limits-hint">
+      <strong>Round Bust:</strong> points auto-assigned when bust button tapped &nbsp;·&nbsp;
+      <strong>Game Bust:</strong> player eliminated when cumulative score exceeds this &nbsp;·&nbsp;
+      <strong>Reentry ≤:</strong> eliminated player may reenter if next highest active total is at or below this
+    </p>
+    <button class="btn-ghost" id="btn-copy-players" onclick="openCopyModal()" style="display:none">📋 Load players from a different game</button>
+    <hr class="divider"/>
+    <button class="btn-primary" onclick="startGame()">Start Game →</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="screen">
+    <div class="game-topbar">
+      <button class="btn-back" style="margin:0" onclick="goTo('home')">← Home</button>
+      <span class="round-badge" id="round-badge">Round 1</span>
+      <button class="btn-finish" onclick="finishGame()">Finish</button>
+    </div>
+    <div id="game-limits-bar" class="limits-bar"></div>
+    <div id="finish-confirm-bar" style="display:none;background:#1a0e0a;border:1px solid #c0392b66;border-radius:10px;padding:12px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px">
+      <span style="font-size:14px;color:#e8dcc8">Finish &amp; save this game?</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('finish-confirm-bar').style.display='none'" style="padding:8px 14px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px">Cancel</button>
+        <button onclick="doFinishGame()" style="padding:8px 14px;background:var(--red);border:none;color:#fff;border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px;font-weight:700">Yes, Finish</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab-entry" onclick="setTab('entry')">Entry</button>
+      <button class="tab" id="tab-scores" onclick="setTab('scores')">Scores</button>
+    </div>
+    <div id="tab-content-entry">
+      <span class="field-label" id="entry-label">Enter points — Round 1</span>
+      <div id="entry-rows"></div>
+      <hr class="divider"/>
+      <button class="btn-primary" onclick="addRound()">Add Round ✓</button>
+      <button class="btn-danger" id="btn-undo" onclick="undoRound()" style="display:none">↩ Undo Last Round</button>
+    </div>
+    <div id="tab-content-scores" style="display:none">
+      <div class="leaderboard" id="leaderboard"></div>
+      <div class="table-wrap" id="rounds-table-wrap" style="display:none">
+        <table id="rounds-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="screen-history" class="screen">
+    <button class="btn-back" onclick="goTo('home')">← Back</button>
+    <h2 class="page-title">History</h2>
+    <div id="history-list"></div>
+  </div>
+
+</div>
+
+<!-- Copy Modal -->
+<div class="modal-overlay hidden" id="copy-modal" onclick="closeCopyOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Copy Players From</span>
+      <button class="modal-close" onclick="closeCopy()">✕</button>
+    </div>
+    <div class="modal-body" id="copy-modal-body"></div>
+  </div>
+</div>
+
+<!-- Reentry Modal -->
+<div class="modal-overlay hidden" id="reentry-modal" onclick="closeReentryOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">↩ Player Reentry</span>
+      <button class="modal-close" onclick="closeReentry()">✕</button>
+    </div>
+    <div class="modal-body" id="reentry-modal-body"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Storage ──────────────────────────────────
+const SKEY = 'pattiboard_v1';
+function loadGames(){
+  try{
+    const raw=localStorage.getItem(SKEY);
+    if(!raw)return[];
+    const cutoff=Date.now()-30*24*60*60*1000;
+    return JSON.parse(raw).filter(g=>g.createdAt>cutoff);
+  }catch{return[];}
+}
+function saveGames(){try{localStorage.setItem(SKEY,JSON.stringify(S.games));}catch{}}
+function uid(){return Math.random().toString(36).slice(2,10);}
+
+// ── State ─────────────────────────────────────
+const S={
+  games:loadGames(),
+  activeId:null,
+  ri:{},           // roundInputs: {player:{score,isWinner,isBust}}
+  ngPlayers:['',''],
+  ngLowerWins:true,
+  tab:'entry',
+  reentryTarget:null,
+  reentryScore:null,
+};
+
+// ── Nav ───────────────────────────────────────
+function goTo(sc){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+sc).classList.add('active');
+  window.scrollTo(0,0);
+  if(sc==='home')renderHome();
+  if(sc==='newGame')renderNewGame();
+  if(sc==='history')renderHistory();
+  if(sc==='game')renderGame();
+}
+
+// ── Toast ─────────────────────────────────────
+let TT;
+function toast(m){
+  const el=document.getElementById('toast');
+  el.textContent=m;el.classList.add('show');
+  clearTimeout(TT);TT=setTimeout(()=>el.classList.remove('show'),2300);
+}
+
+// ── Score helpers ─────────────────────────────
+function totals(g){
+  const t=Object.fromEntries(g.players.map(p=>[p,0]));
+  for(const r of g.rounds){
+    for(const p of g.players){
+      const e=r.scores[p];
+      if(!e)continue;
+      if(e.reentry) t[p]=e.score;   // reset on reentry
+      else t[p]+=e.score;
+    }
+  }
+  return t;
+}
+
+function isBustedOut(g,p){
+  let out=false;
+  for(const r of g.rounds){
+    const e=r.scores[p];
+    if(!e)continue;
+    if(e.reentry) out=false;
+    if(e.gameBust) out=true;
+  }
+  return out;
+}
+
+function reentryCount(g,p){
+  return g.rounds.filter(r=>r.scores[p]&&r.scores[p].reentry).length;
+}
+
+function ranked(g){
+  const t=totals(g);
+  const sf=(a,b)=>g.lowerWins?t[a]-t[b]:t[b]-t[a];
+  const active=g.players.filter(p=>!isBustedOut(g,p)).sort(sf);
+  const out=g.players.filter(p=>isBustedOut(g,p)).sort(sf);
+  return [...active,...out];
+}
+
+function canReenter(g,p){
+  if(!isBustedOut(g,p))return false;
+  const cfg=g.cfg||{};const t=totals(g);
+  const actives=g.players.filter(x=>x!==p&&!isBustedOut(g,x)).map(x=>t[x]);
+  if(!actives.length)return false;
+  const best=g.lowerWins?Math.max(...actives):Math.min(...actives);
+  return best<=(cfg.reentryAt||100);
+}
+
+// ── Home ──────────────────────────────────────
+function renderHome(){
+  const active=S.games.filter(g=>!g.finished);
+  const sec=document.getElementById('active-games-section');
+  if(!active.length){sec.innerHTML='';return;}
+  let h=`<div class="section-label">Active Games</div>`;
+  active.forEach(g=>{
+    const d=new Date(g.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    h+=`<div class="game-card" onclick="openGame('${g.id}')">
+      <div class="game-card-body">
+        <div class="game-card-players">${esc(g.players.join(', '))}</div>
+        <div class="game-card-meta">${d} · ${g.rounds.length} rounds</div>
+      </div>
+      <button class="btn-icon" onclick="delHome(event,'${g.id}')">🗑</button>
+    </div>`;
+  });
+  sec.innerHTML=h;
+}
+
+function openGame(id){
+  S.activeId=id;
+  initRI(game());
+  S.tab='entry';
+  goTo('game');
+}
+function delHome(e,id){e.stopPropagation();if(confirm('Delete this game?')){delGame(id);renderHome();}}
+function delGame(id){S.games=S.games.filter(g=>g.id!==id);saveGames();}
+function initRI(g){S.ri=Object.fromEntries(g.players.map(p=>[p,{score:'',isWinner:false,isBust:false}]));}
+
+// ── New Game ──────────────────────────────────
+function renderNewGame(){
+  const last=S.games[0];
+  if(last){
+    // prefill from most recent game; ensure at least 4 slots
+    const base=[...last.players];
+    while(base.length<4) base.push('');
+    S.ngPlayers=base;
+    const cfg=last.cfg||{};
+    document.getElementById('cfg-round-bust').value=cfg.roundBust||80;
+    document.getElementById('cfg-game-bust').value=cfg.gameBust||250;
+    document.getElementById('cfg-reentry').value=cfg.reentryAt||100;
+    setSM(last.lowerWins);
+  } else {
+    S.ngPlayers=['','','',''];
+    document.getElementById('cfg-round-bust').value=80;
+    document.getElementById('cfg-game-bust').value=250;
+    document.getElementById('cfg-reentry').value=100;
+    setSM(true);
+  }
+  renderPF();
+  // show copy-from button only if there's more than one past game to choose from
+  document.getElementById('btn-copy-players').style.display=S.games.length>1?'block':'none';
+}
+function renderPF(){
+  const list=document.getElementById('players-list');
+  const c=S.ngPlayers.length;
+  document.getElementById('players-label').textContent=`Players (${c} / 10)`;
+  document.getElementById('btn-add-player').style.display=c>=10?'none':'block';
+  list.innerHTML=S.ngPlayers.map((p,i)=>`
+    <div class="player-row">
+      <input class="input-text" placeholder="Player ${i+1}" maxlength="20" value="${esc(p)}" oninput="S.ngPlayers[${i}]=this.value"/>
+      ${c>1?`<button class="btn-remove" onclick="removeP(${i})">✕</button>`:''}
+    </div>`).join('');
+}
+function addPlayerField(){if(S.ngPlayers.length<10){S.ngPlayers.push('');renderPF();}}
+function removeP(i){S.ngPlayers.splice(i,1);renderPF();}
+function setSM(lw){
+  S.ngLowerWins=lw;
+  document.getElementById('toggle-lower').classList.toggle('active',lw);
+  document.getElementById('toggle-higher').classList.toggle('active',!lw);
+}
+// expose for onclick
+function setScoringMode(lw){setSM(lw);}
+
+function startGame(){
+  const players=S.ngPlayers.map(p=>p.trim()).filter(Boolean);
+  if(players.length<2){alert('Add at least 2 players.');return;}
+  if(new Set(players).size!==players.length){alert('Player names must be unique.');return;}
+  const roundBust=parseInt(document.getElementById('cfg-round-bust').value)||80;
+  const gameBust=parseInt(document.getElementById('cfg-game-bust').value)||250;
+  const reentryAt=parseInt(document.getElementById('cfg-reentry').value)||100;
+  const g={id:uid(),createdAt:Date.now(),lowerWins:S.ngLowerWins,players,rounds:[],finished:false,cfg:{roundBust,gameBust,reentryAt}};
+  S.games.unshift(g);saveGames();
+  S.activeId=g.id;initRI(g);S.tab='entry';
+  goTo('game');
+}
+
+// ── Copy Players Modal ────────────────────────
+function openCopyModal(){
+  const body=document.getElementById('copy-modal-body');
+  let h='';
+  S.games.slice(0,15).forEach(g=>{
+    const d=new Date(g.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    const cfg=g.cfg||{};
+    h+=`<div class="copy-item" onclick="copyFrom('${g.id}')">
+      <div class="game-card-players">${esc(g.players.join(', '))}</div>
+      <div class="game-card-meta">${d} · Bust ${cfg.roundBust||80}/${cfg.gameBust||250} · Reentry≤${cfg.reentryAt||100}</div>
+    </div>`;
+  });
+  body.innerHTML=h;
+  document.getElementById('copy-modal').classList.remove('hidden');
+}
+function closeCopy(){document.getElementById('copy-modal').classList.add('hidden');}
+function closeCopyOutside(e){if(e.target===document.getElementById('copy-modal'))closeCopy();}
+function copyFrom(id){
+  const g=S.games.find(x=>x.id===id);if(!g)return;
+  S.ngPlayers=[...g.players];setSM(g.lowerWins);
+  if(g.cfg){
+    document.getElementById('cfg-round-bust').value=g.cfg.roundBust;
+    document.getElementById('cfg-game-bust').value=g.cfg.gameBust;
+    document.getElementById('cfg-reentry').value=g.cfg.reentryAt;
+  }
+  renderPF();closeCopy();toast('Players & settings copied ✓');
+}
+
+// ── Game helpers ──────────────────────────────
+function game(){return S.games.find(g=>g.id===S.activeId);}
+function gi(){return S.games.indexOf(game());}
+function updateGame(patch){S.games[gi()]={...game(),...patch};saveGames();}
+
+// ── Game Screen ───────────────────────────────
+function renderGame(){
+  const g=game();if(!g)return;
+  document.getElementById('round-badge').textContent=`Round ${g.rounds.length+1}`;
+  const cfg=g.cfg||{};
+  document.getElementById('game-limits-bar').innerHTML=`
+    <div class="limit-chip">Round Bust <span>${cfg.roundBust||80}</span></div>
+    <div class="limit-chip">Game Bust <span>${cfg.gameBust||250}</span></div>
+    <div class="limit-chip">Reentry ≤ <span>${cfg.reentryAt||100}</span></div>`;
+  setTab(S.tab);
+}
+
+function setTab(t){
+  S.tab=t;
+  document.getElementById('tab-entry').classList.toggle('active',t==='entry');
+  document.getElementById('tab-scores').classList.toggle('active',t==='scores');
+  document.getElementById('tab-content-entry').style.display=t==='entry'?'block':'none';
+  document.getElementById('tab-content-scores').style.display=t==='scores'?'block':'none';
+  if(t==='entry')renderEntry();
+  if(t==='scores')renderScores();
+}
+
+// ── Entry Tab ─────────────────────────────────
+function renderEntry(){
+  const g=game();
+  document.getElementById('entry-label').textContent=`Enter points — Round ${g.rounds.length+1}`;
+  document.getElementById('btn-undo').style.display=g.rounds.length?'block':'none';
+  const t=totals(g);
+  let h='';
+  g.players.forEach(p=>{
+    const inp=S.ri[p]||{score:'',isWinner:false,isBust:false};
+    const out=isBustedOut(g,p);
+    const re=reentryCount(g,p);
+
+    if(out){
+      const eligible=canReenter(g,p);
+      h+=`<div class="entry-player-block is-busted-out">
+        <div class="entry-top">
+          <span class="entry-name">${esc(p)}</span>
+          <span class="status-badge badge-out">Eliminated</span>
+        </div>
+        <div class="busted-out-msg">Total: ${t[p]} · eliminated</div>
+        ${eligible?`<button class="btn-reenter" onclick="openReentry('${escJ(p)}')">↩ Reenter Player</button>`:''}
+      </div>`;
+    } else {
+      let bc='entry-player-block';
+      if(inp.isWinner)bc+=' is-winner';
+      else if(inp.isBust)bc+=' is-bust';
+      else if(re>0)bc+=' is-reentered';
+
+      const sv=inp.isWinner?'0':inp.isBust?(g.cfg?.roundBust||80):(inp.score||'');
+      const dis=inp.isWinner||inp.isBust?'disabled':'';
+      const wsel=inp.isWinner?'sel':'';
+      const bsel=inp.isBust?'sel':'';
+
+      let badge='';
+      if(re>0)badge=`<span class="status-badge badge-re">↩×${re}</span>`;
+
+      h+=`<div class="${bc}">
+        <div class="entry-top">
+          <span class="entry-name">${esc(p)}</span>
+          ${badge}
+          <span class="entry-total">Total: ${t[p]}</span>
+        </div>
+        <div class="entry-score-row">
+          <input type="number" inputmode="numeric" class="input-score" placeholder="0"
+            value="${sv}" ${dis} oninput="S.ri['${escJ(p)}'].score=this.value"/>
+          <button class="btn-won ${wsel}" onclick="toggleWin('${escJ(p)}')" ${inp.isBust?'disabled':''}>🏆 Won</button>
+          <button class="btn-bust-r ${bsel}" onclick="toggleBust('${escJ(p)}')" ${inp.isWinner?'disabled':''}>💥 Bust</button>
+        </div>
+      </div>`;
+    }
+  });
+  document.getElementById('entry-rows').innerHTML=h;
+}
+
+function toggleWin(p){
+  const was=S.ri[p].isWinner;
+  // clear all winners first
+  game().players.forEach(x=>{if(S.ri[x].isWinner)S.ri[x]={...S.ri[x],isWinner:false,score:''};});
+  if(!was) S.ri[p]={...S.ri[p],isWinner:true,isBust:false,score:'0'};
+  renderEntry();
+}
+function toggleBust(p){
+  const was=S.ri[p].isBust;
+  S.ri[p]={...S.ri[p],isBust:!was,isWinner:false,score:was?'':(game().cfg?.roundBust||80)};
+  renderEntry();
+}
+
+// ── Add Round ─────────────────────────────────
+function addRound(){
+  const g=game();const cfg=g.cfg||{};
+  const scores={};
+  for(const p of g.players){
+    if(isBustedOut(g,p))continue;
+    const inp=S.ri[p]||{};
+    let score;
+    if(inp.isWinner) score=0;
+    else if(inp.isBust) score=cfg.roundBust||80;
+    else{
+      score=parseInt(inp.score,10);
+      if(isNaN(score)){toast(`Enter score for ${p}`);return;}
+    }
+    scores[p]={score,isWinner:!!inp.isWinner,isBust:!!inp.isBust};
+  }
+  // detect game busts
+  const ct=totals(g);
+  for(const p of g.players){
+    if(isBustedOut(g,p)||!scores[p])continue;
+    if(ct[p]+scores[p].score>(cfg.gameBust||250)){
+      scores[p]={...scores[p],gameBust:true};
+    }
+  }
+  updateGame({rounds:[...g.rounds,{id:uid(),scores}]});
+  initRI(game());
+  document.getElementById('round-badge').textContent=`Round ${game().rounds.length+1}`;
+  const bustedNow=Object.entries(scores).filter(([,v])=>v.gameBust).map(([p])=>p);
+  if(bustedNow.length) toast(`${bustedNow.join(', ')} eliminated! 💥`);
+  else toast('Round added ✓');
+  renderEntry();
+}
+
+// ── Reentry Modal ─────────────────────────────
+function openReentry(p){
+  const g=game();const cfg=g.cfg||{};const t=totals(g);
+  const actives=g.players.filter(x=>x!==p&&!isBustedOut(g,x));
+  const at=actives.map(x=>t[x]);
+  // reentry score = next highest (worst active score in lower-wins, best in higher-wins)
+  const reentryScore=at.length?(g.lowerWins?Math.max(...at):Math.min(...at)):0;
+  S.reentryTarget=p;
+  S.reentryScore=reentryScore;
+  document.getElementById('reentry-modal-body').innerHTML=`
+    <div class="reentry-info">
+      <strong>${esc(p)}</strong> was eliminated with <strong>${t[p]}</strong> total points.<br>
+      Next highest active total: <strong>${reentryScore}</strong> (reentry threshold: ${cfg.reentryAt||100}).<br>
+      Player reenters with score reset to <strong>${reentryScore}</strong>.
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Reentry Score</div>
+      <div style="font-size:40px;font-weight:700;color:var(--orange);font-family:'Playfair Display',serif">${reentryScore}</div>
+    </div>
+    <button class="btn-primary" onclick="confirmReentry()">↩ Confirm Reentry</button>`;
+  document.getElementById('reentry-modal').classList.remove('hidden');
+}
+function closeReentry(){document.getElementById('reentry-modal').classList.add('hidden');S.reentryTarget=null;S.reentryScore=null;}
+function closeReentryOutside(e){if(e.target===document.getElementById('reentry-modal'))closeReentry();}
+function confirmReentry(){
+  const p=S.reentryTarget;if(!p)return;
+  const score=S.reentryScore;
+  const g=game();
+  const scores={[p]:{score,reentry:true}};
+  updateGame({rounds:[...g.rounds,{id:uid(),scores,reentryRound:true,reentryPlayer:p}]});
+  initRI(game());
+  document.getElementById('round-badge').textContent=`Round ${game().rounds.length+1}`;
+  closeReentry();
+  toast(`${p} reentered at ${score} points`);
+  renderEntry();
+}
+
+// ── Undo / Finish ─────────────────────────────
+function undoRound(){
+  if(!confirm('Remove the last round?'))return;
+  const nr=game().rounds.slice(0,-1);
+  updateGame({rounds:nr});initRI(game());
+  document.getElementById('round-badge').textContent=`Round ${nr.length+1}`;
+  renderEntry();toast('Last round removed');
+}
+function finishGame(){
+  const bar=document.getElementById('finish-confirm-bar');
+  bar.style.display=bar.style.display==='flex'?'none':'flex';
+}
+function doFinishGame(){
+  document.getElementById('finish-confirm-bar').style.display='none';
+  const idx=S.games.findIndex(g=>g.id===S.activeId);
+  if(idx===-1){toast('Error: game not found');return;}
+  S.games[idx]=Object.assign({},S.games[idx],{finished:true});
+  saveGames();
+  S.activeId=null;
+  toast('Game finished & saved!');
+  goTo('home');
+}
+
+// ── Scores Tab ────────────────────────────────
+function renderScores(){
+  const g=game();const t=totals(g);const r=ranked(g);
+  let lb='';
+  r.forEach((p,i)=>{
+    const out=isBustedOut(g,p);
+    const re=reentryCount(g,p);
+    const icon=out?'💀':i===0?'🏆':`#${i+1}`;
+    let badges='';
+    if(out)badges+=`<span class="status-badge badge-out" style="font-size:10px">Out</span>`;
+    if(re>0)badges+=`<span class="status-badge badge-re" style="font-size:10px">↩×${re}</span>`;
+    lb+=`<div class="leader-row ${i===0&&!out?'first':''} ${out?'out':''}">
+      <span class="rank">${icon}</span>
+      <span class="lb-name">${esc(p)}</span>
+      <div class="lb-right">${badges}<span class="lb-score">${t[p]}</span></div>
+    </div>`;
+  });
+  document.getElementById('leaderboard').innerHTML=lb;
+
+  if(!g.rounds.length){document.getElementById('rounds-table-wrap').style.display='none';return;}
+  document.getElementById('rounds-table-wrap').style.display='block';
+
+  let rn=0;
+  let th=`<tr><th>Rnd</th>${g.players.map(p=>`<th>${esc(p)}</th>`).join('')}</tr>`;
+  let tb='';
+  g.rounds.forEach(rnd=>{
+    if(rnd.reentryRound){
+      tb+=`<tr style="background:#1a1308">
+        <td class="cr" style="font-size:11px">↩</td>
+        ${g.players.map(p=>{
+          const e=rnd.scores[p];
+          return e&&e.reentry?`<td class="cr">↩${e.score}</td>`:`<td style="color:var(--muted)">—</td>`;
+        }).join('')}
+      </tr>`;
+    } else {
+      rn++;
+      tb+=`<tr>
+        <td>${rn}</td>
+        ${g.players.map(p=>{
+          const e=rnd.scores[p];
+          if(!e)return`<td style="color:var(--muted)">—</td>`;
+          if(e.isWinner)return`<td class="cw">🏆0</td>`;
+          if(e.gameBust)return`<td class="cb">💥${e.score}</td>`;
+          if(e.isBust)return`<td class="cb">B${e.score}</td>`;
+          return`<td>${e.score}</td>`;
+        }).join('')}
+      </tr>`;
+    }
+  });
+  const t2=totals(g);
+  tb+=`<tr class="total-row"><td>Total</td>${g.players.map(p=>`<td>${t2[p]}</td>`).join('')}</tr>`;
+  document.getElementById('rounds-table').innerHTML=`<thead>${th}</thead><tbody>${tb}</tbody>`;
+}
+
+// ── History ───────────────────────────────────
+function renderHistory(){
+  const fin=S.games.filter(g=>g.finished);
+  const el=document.getElementById('history-list');
+  if(!fin.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🃏</div>No finished games yet</div>`;return;}
+  el.innerHTML=fin.map(g=>{
+    const t=totals(g);const r=ranked(g);
+    const d=new Date(g.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    return`<div class="hist-card">
+      <div class="hist-card-header" onclick="toggleH('${g.id}')">
+        <div>
+          <div class="game-card-players">🏆 ${esc(r[0])} <span style="color:var(--gold);font-family:'Playfair Display',serif">${t[r[0]]}</span></div>
+          <div class="game-card-meta">${d} · ${g.rounds.length} rounds · ${g.players.length} players</div>
+        </div>
+        <div class="hist-card-actions">
+          <button class="btn-icon" onclick="delH(event,'${g.id}')">🗑</button>
+          <span class="chevron" id="chev-${g.id}">▼</span>
+        </div>
+      </div>
+      <div class="hist-card-detail" id="hcd-${g.id}">
+        ${r.map((p,i)=>{
+          const out=isBustedOut(g,p);const re=reentryCount(g,p);
+          return`<div class="leader-row ${i===0&&!out?'first':''} ${out?'out':''}" style="margin-top:6px">
+            <span class="rank">${out?'💀':i===0?'🏆':'#'+(i+1)}</span>
+            <span class="lb-name">${esc(p)}${re>0?` <span style="color:var(--orange);font-size:11px">↩×${re}</span>`:''}${out?` <span style="color:var(--red);font-size:11px">out</span>`:''}</span>
+            <span class="lb-score">${t[p]}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleH(id){
+  const d=document.getElementById('hcd-'+id);
+  const c=document.getElementById('chev-'+id);
+  const o=d.classList.toggle('open');
+  c.classList.toggle('open',o);
+}
+function delH(e,id){e.stopPropagation();if(confirm('Delete?')){delGame(id);renderHistory();}}
+
+// ── Util ──────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escJ(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+renderHome();
+
+// ── Register Service Worker ────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('SW registered'))
+      .catch(e => console.log('SW failed', e));
+  });
+}
+</script>
+</body>
+</html>
