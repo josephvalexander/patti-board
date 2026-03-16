@@ -1,5 +1,5 @@
 // sw.js — Service Worker for Pattiboard
-const CACHE = 'pattiboard-v1';
+const CACHE = 'pattiboard-20260316063132';
 
 // Files to cache for offline use
 const ASSETS = [
