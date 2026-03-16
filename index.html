@@ -90,6 +90,7 @@
     .limits-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
     .limit-field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:5px;}
     .input-num{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:15px;text-align:center;font-family:'Lato',sans-serif;outline:none;-moz-appearance:textfield;}
+    .reentry-display{display:flex;align-items:center;justify-content:center;min-height:42px;}
     .input-num::-webkit-inner-spin-button,.input-num::-webkit-outer-spin-button{-webkit-appearance:none;}
     .input-num:focus{border-color:var(--gold);}
     .limits-hint{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
@@ -237,11 +238,12 @@
       </div>
       <div class="limit-field">
         <label>Game Bust</label>
-        <input type="number" inputmode="numeric" class="input-num" id="cfg-game-bust" value="250" min="1" />
+        <input type="number" inputmode="numeric" class="input-num" id="cfg-game-bust" value="250" min="1" oninput="updateReentryDisplay()" />
       </div>
       <div class="limit-field">
-        <label>Reentry ≤</label>
-        <input type="number" inputmode="numeric" class="input-num" id="cfg-reentry" value="100" min="1" />
+        <label>Reentry Score</label>
+        <div class="input-num reentry-display" id="cfg-reentry-display" style="cursor:default;opacity:0.75;font-weight:700;color:var(--orange)">200</div>
+        <input type="hidden" id="cfg-reentry" value="200" />
       </div>
     </div>
     <div class="limits-hint">
@@ -264,7 +266,7 @@
     </div>
     <div id="game-limits-bar" class="limits-bar"></div>
     <div id="finish-confirm-bar" style="display:none;background:color-mix(in srgb,var(--red) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--red) 40%,var(--border));border-radius:10px;padding:12px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px">
-      <span style="font-size:14px;color:#e8dcc8">Finish &amp; save this game?</span>
+      <span style="font-size:14px;color:var(--text)">Finish &amp; save this game?</span>
       <div style="display:flex;gap:8px">
         <button onclick="document.getElementById('finish-confirm-bar').style.display='none'" style="padding:8px 14px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px">Cancel</button>
         <button onclick="doFinishGame()" style="padding:8px 14px;background:var(--red);border:none;color:#fff;border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px;font-weight:700">Yes, Finish</button>
@@ -446,25 +448,28 @@ function initRI(g){S.ri=Object.fromEntries(g.players.map(p=>[p,{score:'',isWinne
 function renderNewGame(){
   const last=S.games[0];
   if(last){
-    // prefill from most recent game; ensure at least 4 slots
     const base=[...last.players];
     while(base.length<4) base.push('');
     S.ngPlayers=base;
     const cfg=last.cfg||{};
     document.getElementById('cfg-round-bust').value=cfg.roundBust||80;
     document.getElementById('cfg-game-bust').value=cfg.gameBust||250;
-    document.getElementById('cfg-reentry').value=cfg.reentryAt||100;
     setSM(last.lowerWins);
   } else {
     S.ngPlayers=['','','',''];
     document.getElementById('cfg-round-bust').value=80;
     document.getElementById('cfg-game-bust').value=250;
-    document.getElementById('cfg-reentry').value=100;
     setSM(true);
   }
+  updateReentryDisplay();
   renderPF();
-  // show copy-from button only if there's more than one past game to choose from
   document.getElementById('btn-copy-players').style.display=S.games.length>1?'block':'none';
+}
+function updateReentryDisplay(){
+  const gb=parseInt(document.getElementById('cfg-game-bust').value)||250;
+  const rs=Math.round(gb*0.8);
+  document.getElementById('cfg-reentry-display').textContent=rs;
+  document.getElementById('cfg-reentry').value=rs;
 }
 function renderPF(){
   const list=document.getElementById('players-list');
@@ -526,7 +531,7 @@ function copyFrom(id){
   const cfg=g.cfg||{};
   document.getElementById('cfg-round-bust').value=cfg.roundBust||80;
   document.getElementById('cfg-game-bust').value=cfg.gameBust||250;
-  document.getElementById('cfg-reentry').value=cfg.reentryAt||100;
+  updateReentryDisplay();
   renderPF();closeCopy();toast('Players & settings copied ✓');
 }
 
