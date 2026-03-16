@@ -1,0 +1,30 @@
+name: Deploy Pattiboard
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  stamp-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Stamp version into sw.js
+        run: |
+          VERSION=$(date -u +"%Y%m%d%H%M%S")
+          echo "Stamping version: $VERSION"
+          sed -i "s/const CACHE = 'pattiboard-[^']*'/const CACHE = 'pattiboard-$VERSION'/" sw.js
+          grep "const CACHE" sw.js
+
+      - name: Commit updated sw.js
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sw.js
+          git diff --staged --quiet || git commit -m "chore: auto-stamp cache version [skip ci]"
+          git push
