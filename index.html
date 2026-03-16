@@ -13,6 +13,7 @@
   <title>Pattiboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
   <style>
+    /* ── DARK theme (default) ── */
     :root {
       --bg:#0f0c08; --surface:#1a1610; --card:#221d15; --card2:#2a2318;
       --gold:#c9a84c; --gold-lt:#f0c060; --gold-dim:#7a6020;
@@ -20,6 +21,17 @@
       --green:#27ae60; --green-dim:#145a32;
       --orange:#e67e22;
       --text:#e8dcc8; --muted:#7a6e5e; --border:#3a3020; --radius:12px;
+      --theme-icon:'☀️';
+    }
+    /* ── LIGHT theme ── */
+    :root.light {
+      --bg:#f5f0e8; --surface:#fffdf7; --card:#fff8ee; --card2:#fdf4e3;
+      --gold:#a0720a; --gold-lt:#7a5500; --gold-dim:#c9960a;
+      --red:#c0392b; --red-dim:#e8b4b0;
+      --green:#1e8449; --green-dim:#a9dfbf;
+      --orange:#d35400;
+      --text:#2c2410; --muted:#8a7a60; --border:#d4c49a; --radius:12px;
+      --theme-icon:'🌙';
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
@@ -31,7 +43,8 @@
 
     /* Home */
     .home-header{text-align:center;padding:40px 0 28px;position:relative;}
-    .home-header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,#c9a84c18,transparent);pointer-events:none;}
+    .home-header .btn-theme{position:absolute;top:16px;right:0;}
+    .home-header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,color-mix(in srgb, var(--gold) 12%, transparent),transparent);pointer-events:none;}
     .suits{font-size:22px;letter-spacing:10px;color:var(--gold);margin-bottom:10px;}
     .suits .rs{color:#c0392b;}
     h1.app-title{font-family:'Playfair Display',serif;font-size:38px;font-weight:900;color:var(--gold-lt);letter-spacing:1px;text-shadow:0 2px 20px #b8860b55;line-height:1;}
@@ -81,11 +94,15 @@
     .input-num:focus{border-color:var(--gold);}
     .limits-hint{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
     .limits-hint strong{color:var(--text);}
+    .hint-line{padding:3px 0 3px 10px;border-left:2px solid var(--border);margin-bottom:6px;}
+    .hint-line:last-child{margin-bottom:0;}
 
     /* Game topbar */
     .game-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
     .round-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:5px 16px;font-size:13px;color:var(--gold);font-weight:700;}
     .btn-finish{background:transparent;border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:7px 16px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;}
+    .btn-theme{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:16px;line-height:1;transition:border-color .2s;}
+    .btn-theme:hover{border-color:var(--gold);}
     .limits-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
     .limit-chip{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);}
     .limit-chip span{color:var(--gold);font-weight:700;}
@@ -97,10 +114,10 @@
 
     /* Entry blocks */
     .entry-player-block{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;transition:border-color .2s,background .2s;}
-    .entry-player-block.is-winner{border-color:var(--green-dim);background:#0e2318;}
-    .entry-player-block.is-bust{border-color:var(--red-dim);background:#2a1210;}
-    .entry-player-block.is-busted-out{border-color:#2a2318;background:#15110d;opacity:.65;}
-    .entry-player-block.is-reentered{border-color:#7a5010;background:#1e1608;}
+    .entry-player-block.is-winner{border-color:var(--green-dim);background:color-mix(in srgb,var(--green) 8%,var(--card));}
+    .entry-player-block.is-bust{border-color:var(--red-dim);background:color-mix(in srgb,var(--red) 8%,var(--card));}
+    .entry-player-block.is-busted-out{border-color:var(--border);background:var(--surface);opacity:.55;}
+    .entry-player-block.is-reentered{border-color:var(--gold-dim);background:color-mix(in srgb,var(--gold) 6%,var(--card));}
 
     .entry-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
     .entry-name{flex:1;font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -116,21 +133,21 @@
     .input-score:focus{border-color:var(--gold);}
     .input-score:disabled{opacity:.3;cursor:not-allowed;}
 
-    .btn-won{flex:1;padding:10px 6px;background:#0e2318;border:1px solid var(--green-dim);color:var(--green);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .btn-won{flex:1;padding:10px 6px;background:color-mix(in srgb,var(--green) 8%,var(--surface));border:1px solid var(--green-dim);color:var(--green);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
     .btn-won.sel{background:var(--green);color:#071208;border-color:var(--green);}
     .btn-won:disabled{opacity:.3;cursor:not-allowed;}
-    .btn-bust-r{flex:1;padding:10px 6px;background:#2a1210;border:1px solid var(--red-dim);color:var(--red);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .btn-bust-r{flex:1;padding:10px 6px;background:color-mix(in srgb,var(--red) 8%,var(--surface));border:1px solid var(--red-dim);color:var(--red);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
     .btn-bust-r.sel{background:var(--red);color:#fff;border-color:var(--red);}
     .btn-bust-r:disabled{opacity:.3;cursor:not-allowed;}
 
     .busted-out-msg{font-size:13px;color:var(--muted);text-align:center;padding:6px 0;}
-    .btn-reenter{margin-top:10px;width:100%;padding:9px;background:transparent;border:1px dashed #7a5010;color:var(--orange);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;cursor:pointer;transition:background .15s;}
+    .btn-reenter{margin-top:10px;width:100%;padding:9px;background:transparent;border:1px dashed var(--gold-dim);color:var(--orange);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;cursor:pointer;transition:background .15s;}
     .btn-reenter:hover{background:#e67e2210;}
 
     /* Scores tab */
     .leaderboard{display:flex;flex-direction:column;gap:8px;}
     .leader-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:var(--card);border:1px solid var(--border);}
-    .leader-row.first{background:linear-gradient(135deg,#b8860b18,#ffd70014);border-color:var(--gold-dim);}
+    .leader-row.first{background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 12%,var(--card)),color-mix(in srgb,var(--gold) 6%,var(--card)));border-color:var(--gold-dim);}
     .leader-row.out{opacity:.5;}
     .rank{font-size:18px;width:30px;text-align:center;flex-shrink:0;}
     .lb-name{flex:1;font-size:15px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -188,6 +205,7 @@
   <!-- HOME -->
   <div id="screen-home" class="screen active">
     <div class="home-header">
+      <button class="btn-theme" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
       <div class="suits">♠ <span class="rs">♥</span> <span class="rs">♦</span> ♣</div>
       <h1 class="app-title">Pattiboard</h1>
       <p class="app-subtitle">Rummy Score Tracker</p>
@@ -226,11 +244,12 @@
         <input type="number" inputmode="numeric" class="input-num" id="cfg-reentry" value="100" min="1" />
       </div>
     </div>
-    <p class="limits-hint">
-      <strong>Round Bust:</strong> points auto-assigned when bust button tapped &nbsp;·&nbsp;
-      <strong>Game Bust:</strong> player eliminated when cumulative score exceeds this &nbsp;·&nbsp;
-      <strong>Reentry ≤:</strong> eliminated player may reenter if next highest active total is at or below this
-    </p>
+    <div class="limits-hint">
+      <div class="hint-line"><strong>Round Bust:</strong> Points auto-assigned when the 💥 Bust button is tapped</div>
+      <div class="hint-line"><strong>Game Bust:</strong> Player is eliminated when their cumulative score exceeds this</div>
+      <div class="hint-line"><strong>Reentry ≤:</strong> Eliminated player may reenter if next highest active total is at or below this</div>
+      <div class="hint-line"><strong>Reentry score</strong> is always set to 80% of Game Bust automatically</div>
+    </div>
     <button class="btn-ghost" id="btn-copy-players" onclick="openCopyModal()" style="display:none">📋 Load players from a different game</button>
     <hr class="divider"/>
     <button class="btn-primary" onclick="startGame()">Start Game →</button>
@@ -244,7 +263,7 @@
       <button class="btn-finish" onclick="finishGame()">Finish</button>
     </div>
     <div id="game-limits-bar" class="limits-bar"></div>
-    <div id="finish-confirm-bar" style="display:none;background:#1a0e0a;border:1px solid #c0392b66;border-radius:10px;padding:12px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px">
+    <div id="finish-confirm-bar" style="display:none;background:color-mix(in srgb,var(--red) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--red) 40%,var(--border));border-radius:10px;padding:12px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px">
       <span style="font-size:14px;color:#e8dcc8">Finish &amp; save this game?</span>
       <div style="display:flex;gap:8px">
         <button onclick="document.getElementById('finish-confirm-bar').style.display='none'" style="padding:8px 14px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-size:13px">Cancel</button>
@@ -500,12 +519,14 @@ function closeCopy(){document.getElementById('copy-modal').classList.add('hidden
 function closeCopyOutside(e){if(e.target===document.getElementById('copy-modal'))closeCopy();}
 function copyFrom(id){
   const g=S.games.find(x=>x.id===id);if(!g)return;
-  S.ngPlayers=[...g.players];setSM(g.lowerWins);
-  if(g.cfg){
-    document.getElementById('cfg-round-bust').value=g.cfg.roundBust;
-    document.getElementById('cfg-game-bust').value=g.cfg.gameBust;
-    document.getElementById('cfg-reentry').value=g.cfg.reentryAt;
-  }
+  const base=[...g.players];
+  while(base.length<4) base.push('');
+  S.ngPlayers=base;
+  setSM(g.lowerWins);
+  const cfg=g.cfg||{};
+  document.getElementById('cfg-round-bust').value=cfg.roundBust||80;
+  document.getElementById('cfg-game-bust').value=cfg.gameBust||250;
+  document.getElementById('cfg-reentry').value=cfg.reentryAt||100;
   renderPF();closeCopy();toast('Players & settings copied ✓');
 }
 
@@ -641,15 +662,16 @@ function openReentry(p){
   const g=game();const cfg=g.cfg||{};const t=totals(g);
   const actives=g.players.filter(x=>x!==p&&!isBustedOut(g,x));
   const at=actives.map(x=>t[x]);
-  // reentry score = next highest (worst active score in lower-wins, best in higher-wins)
-  const reentryScore=at.length?(g.lowerWins?Math.max(...at):Math.min(...at)):0;
+  const nextHighest=at.length?(g.lowerWins?Math.max(...at):Math.min(...at)):0;
+  // reentry score = 80% of game bust limit
+  const reentryScore=Math.round((cfg.gameBust||250)*0.8);
   S.reentryTarget=p;
   S.reentryScore=reentryScore;
   document.getElementById('reentry-modal-body').innerHTML=`
     <div class="reentry-info">
       <strong>${esc(p)}</strong> was eliminated with <strong>${t[p]}</strong> total points.<br>
-      Next highest active total: <strong>${reentryScore}</strong> (reentry threshold: ${cfg.reentryAt||100}).<br>
-      Player reenters with score reset to <strong>${reentryScore}</strong>.
+      Next highest active total: <strong>${nextHighest}</strong> (reentry threshold: ${cfg.reentryAt||100}).<br>
+      Reentry score is set to <strong>80% of game bust</strong> (${cfg.gameBust||250} × 80% = ${reentryScore}).
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;margin-bottom:16px">
       <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Reentry Score</div>
@@ -723,7 +745,7 @@ function renderScores(){
   let tb='';
   g.rounds.forEach(rnd=>{
     if(rnd.reentryRound){
-      tb+=`<tr style="background:#1a1308">
+      tb+=`<tr style="background:color-mix(in srgb,var(--orange) 8%,var(--surface))">
         <td class="cr" style="font-size:11px">↩</td>
         ${g.players.map(p=>{
           const e=rnd.scores[p];
@@ -793,6 +815,27 @@ function delH(e,id){e.stopPropagation();if(confirm('Delete?')){delGame(id);rende
 // ── Util ──────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function escJ(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+// ── Theme ─────────────────────────────────────
+function applyTheme(light){
+  document.documentElement.classList.toggle('light', light);
+  const btn=document.getElementById('theme-toggle');
+  if(btn) btn.textContent=light?'🌙':'☀️';
+  // update meta theme-color
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.content=light?'#f5f0e8':'#0f0c08';
+}
+function toggleTheme(){
+  const isLight=document.documentElement.classList.contains('light');
+  const next=!isLight;
+  localStorage.setItem('pattiboard_theme', next?'light':'dark');
+  applyTheme(next);
+}
+// restore saved theme
+(function(){
+  const saved=localStorage.getItem('pattiboard_theme');
+  applyTheme(saved==='light');
+})();
 
 renderHome();
 
