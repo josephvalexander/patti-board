@@ -196,6 +196,27 @@
     .empty{text-align:center;color:var(--muted);padding:48px 0;font-size:15px;}
     .empty-icon{font-size:40px;margin-bottom:12px;}
     .divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+
+    /* Summary screen */
+    .summary-winner{text-align:center;padding:28px 16px 20px;background:linear-gradient(160deg,color-mix(in srgb,var(--gold) 10%,var(--card)),var(--card));border:1px solid var(--gold-dim);border-radius:16px;margin-bottom:18px;}
+    .summary-trophy{font-size:52px;margin-bottom:6px;}
+    .summary-winner-name{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:var(--gold-lt);margin-bottom:2px;}
+    .summary-winner-sub{font-size:13px;color:var(--muted);}
+    .summary-stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;}
+    .summary-stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;}
+    .summary-stat-val{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold);}
+    .summary-stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;}
+    .summary-player-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+    .summary-player-card.winner{border-color:var(--gold-dim);background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 8%,var(--card)),var(--card));}
+    .summary-player-card.eliminated{opacity:.6;}
+    .summary-rank{font-size:20px;width:32px;text-align:center;flex-shrink:0;}
+    .summary-player-info{flex:1;min-width:0;}
+    .summary-player-name{font-size:15px;font-weight:700;color:var(--text);}
+    .summary-player-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:6px;}
+    .summary-tag{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:11px;}
+    .summary-tag.re{color:var(--orange);border-color:color-mix(in srgb,var(--orange) 40%,var(--border));}
+    .summary-tag.out{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--border));}
+    .summary-score{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold);flex-shrink:0;}
     ::-webkit-scrollbar{width:4px;}
     ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
   </style>
@@ -241,7 +262,7 @@
         <input type="number" inputmode="numeric" class="input-num" id="cfg-game-bust" value="250" min="1" oninput="updateReentryDisplay()" />
       </div>
       <div class="limit-field">
-        <label>Reentry Score</label>
+        <label>Reentry Limit</label>
         <div class="input-num reentry-display" id="cfg-reentry-display" style="cursor:default;opacity:0.75;font-weight:700;color:var(--orange)">200</div>
         <input type="hidden" id="cfg-reentry" value="200" />
       </div>
@@ -249,7 +270,7 @@
     <div class="limits-hint">
       <div class="hint-line"><strong>Round Bust:</strong> Points auto-assigned when the 💥 Bust button is tapped</div>
       <div class="hint-line"><strong>Game Bust:</strong> Player is eliminated when their cumulative score exceeds this</div>
-      <div class="hint-line"><strong>Reentry ≤:</strong> Eliminated player may reenter if next highest active total is at or below this</div>
+      <div class="hint-line"><strong>Reentry Limit:</strong> Eliminated player may reenter only if next highest active total is strictly below this value, and only in the very next round after being eliminated</div>
       <div class="hint-line"><strong>Reentry score</strong> is always set to 80% of Game Bust automatically</div>
     </div>
     <button class="btn-ghost" id="btn-copy-players" onclick="openCopyModal()" style="display:none">📋 Load players from a different game</button>
@@ -296,6 +317,11 @@
     <button class="btn-back" onclick="goTo('home')">← Back</button>
     <h2 class="page-title">History</h2>
     <div id="history-list"></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div id="screen-summary" class="screen">
+    <div id="summary-content"></div>
   </div>
 
 </div>
@@ -359,6 +385,7 @@ function goTo(sc){
   if(sc==='newGame')renderNewGame();
   if(sc==='history')renderHistory();
   if(sc==='game')renderGame();
+  // summary is rendered before goTo is called, nothing extra needed
 }
 
 // ── Toast ─────────────────────────────────────
@@ -408,11 +435,17 @@ function ranked(g){
 
 function canReenter(g,p){
   if(!isBustedOut(g,p))return false;
+  // Reentry only allowed in the round immediately after bust (last round must be the bust round)
+  const lastRound=g.rounds[g.rounds.length-1];
+  if(!lastRound)return false;
+  const lastEntry=lastRound.scores[p];
+  if(!lastEntry||!lastEntry.gameBust)return false; // bust must have happened last round
+  // Next highest active score must be strictly below the reentry limit
   const cfg=g.cfg||{};const t=totals(g);
   const actives=g.players.filter(x=>x!==p&&!isBustedOut(g,x)).map(x=>t[x]);
   if(!actives.length)return false;
-  const best=g.lowerWins?Math.max(...actives):Math.min(...actives);
-  return best<=(cfg.reentryAt||100);
+  const nextHighest=g.lowerWins?Math.max(...actives):Math.min(...actives);
+  return nextHighest<(cfg.reentryAt||100);
 }
 
 // ── Home ──────────────────────────────────────
@@ -667,19 +700,22 @@ function openReentry(p){
   const g=game();const cfg=g.cfg||{};const t=totals(g);
   const actives=g.players.filter(x=>x!==p&&!isBustedOut(g,x));
   const at=actives.map(x=>t[x]);
+  // next highest = worst active score (max in lower-wins)
   const nextHighest=at.length?(g.lowerWins?Math.max(...at):Math.min(...at)):0;
-  // reentry score = 80% of game bust limit
-  const reentryScore=Math.round((cfg.gameBust||250)*0.8);
+  // Prefill reentry score = next highest player's points
+  const reentryScore=nextHighest;
   S.reentryTarget=p;
   S.reentryScore=reentryScore;
+  const reentryLimit=cfg.reentryAt||100;
   document.getElementById('reentry-modal-body').innerHTML=`
     <div class="reentry-info">
       <strong>${esc(p)}</strong> was eliminated with <strong>${t[p]}</strong> total points.<br>
-      Next highest active total: <strong>${nextHighest}</strong> (reentry threshold: ${cfg.reentryAt||100}).<br>
-      Reentry score is set to <strong>80% of game bust</strong> (${cfg.gameBust||250} × 80% = ${reentryScore}).
+      Reentry limit: <strong>${reentryLimit}</strong> — next highest active total is <strong>${nextHighest}</strong>, which qualifies.<br>
+      Player reenters with score set to next highest player's total.
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;margin-bottom:16px">
-      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Reentry Score</div>
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">Reentry Score</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">(next highest player's points)</div>
       <div style="font-size:40px;font-weight:700;color:var(--orange);font-family:'Playfair Display',serif">${reentryScore}</div>
     </div>
     <button class="btn-primary" onclick="confirmReentry()">↩ Confirm Reentry</button>`;
@@ -718,9 +754,10 @@ function doFinishGame(){
   if(idx===-1){toast('Error: game not found');return;}
   S.games[idx]=Object.assign({},S.games[idx],{finished:true});
   saveGames();
+  const finishedId=S.activeId;
   S.activeId=null;
-  toast('Game finished & saved!');
-  goTo('home');
+  renderSummary(finishedId);
+  goTo('summary');
 }
 
 // ── Scores Tab ────────────────────────────────
@@ -820,6 +857,76 @@ function delH(e,id){e.stopPropagation();if(confirm('Delete?')){delGame(id);rende
 // ── Util ──────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function escJ(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+// ── Summary Screen ───────────────────────────
+function renderSummary(gameId){
+  const g=S.games.find(x=>x.id===gameId);
+  if(!g){document.getElementById('summary-content').innerHTML='';return;}
+  const t=totals(g);
+  const r=ranked(g);
+  const winner=r[0];
+  const cfg=g.cfg||{};
+  const date=new Date(g.createdAt).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
+  // count real scoring rounds (not reentry rows)
+  const scoringRounds=g.rounds.filter(x=>!x.reentryRound).length;
+  const totalReentries=g.players.reduce((sum,p)=>sum+reentryCount(g,p),0);
+
+  let html=`
+    <div class="summary-winner">
+      <div class="summary-trophy">🏆</div>
+      <div class="summary-winner-name">${esc(winner)}</div>
+      <div class="summary-winner-sub">Winner · ${t[winner]} points</div>
+    </div>
+
+    <div class="summary-stats-row">
+      <div class="summary-stat">
+        <div class="summary-stat-val">${scoringRounds}</div>
+        <div class="summary-stat-label">Rounds</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-val">${g.players.length}</div>
+        <div class="summary-stat-label">Players</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-stat-val">${totalReentries}</div>
+        <div class="summary-stat-label">Reentries</div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:0">Final Standings</div>`;
+
+  r.forEach((p,i)=>{
+    const out=isBustedOut(g,p);
+    const re=reentryCount(g,p);
+    const isWinner=i===0&&!out;
+    let tags='';
+    if(re>0) tags+=`<span class="summary-tag re">↩ Reentered ${re}×</span>`;
+    if(out)  tags+=`<span class="summary-tag out">💀 Eliminated</span>`;
+    const rankIcon=out?'💀':isWinner?'🏆':`#${i+1}`;
+    html+=`
+      <div class="summary-player-card ${isWinner?'winner':''} ${out?'eliminated':''}">
+        <div class="summary-rank">${rankIcon}</div>
+        <div class="summary-player-info">
+          <div class="summary-player-name">${esc(p)}</div>
+          <div class="summary-player-meta">${tags||'<span class="summary-tag">Active</span>'}</div>
+        </div>
+        <div class="summary-score">${t[p]}</div>
+      </div>`;
+  });
+
+  html+=`
+    <div style="margin-top:18px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.8">
+      <div>📅 ${date}</div>
+      <div>🎯 Scoring: ${g.lowerWins?'Lower wins':'Higher wins'}</div>
+      <div>💥 Round bust: ${cfg.roundBust||80} · Game bust: ${cfg.gameBust||250} · Reentry limit: ${cfg.reentryAt||100}</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn-ghost" style="flex:1;margin-top:0" onclick="goTo('history')">📜 View History</button>
+      <button class="btn-primary" style="flex:1" onclick="goTo('home')">← Home</button>
+    </div>`;
+
+  document.getElementById('summary-content').innerHTML=html;
+}
 
 // ── Theme ─────────────────────────────────────
 function applyTheme(light){
