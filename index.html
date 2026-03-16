@@ -844,12 +844,38 @@ function toggleTheme(){
 
 renderHome();
 
-// ── Register Service Worker ────────────────────
-if('serviceWorker' in navigator){
+// ── Service Worker + Auto-update ──────────────
+const APP_VERSION = '202603160624';
+
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW failed', e));
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+
+      // Check for updates every time the page loads
+      reg.update();
+
+      // When a new SW is waiting, show a toast and reload automatically
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version ready — tell the waiting SW to take over, then reload
+            newSW.postMessage('SKIP_WAITING');
+          }
+        });
+      });
+
+      // When the SW has taken control (after skipWaiting), reload the page
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          toast('✨ App updated! Reloading...');
+          setTimeout(() => window.location.reload(), 1200);
+        }
+      });
+
+    }).catch(e => console.log('SW registration failed', e));
   });
 }
 </script>
