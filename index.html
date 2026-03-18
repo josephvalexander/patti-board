@@ -117,6 +117,7 @@
     .entry-player-block{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;transition:border-color .2s,background .2s;}
     .entry-player-block.is-winner{border-color:var(--green-dim);background:color-mix(in srgb,var(--green) 8%,var(--card));}
     .entry-player-block.is-bust{border-color:var(--red-dim);background:color-mix(in srgb,var(--red) 8%,var(--card));}
+    .entry-player-block.is-scute{border-color:color-mix(in srgb,var(--orange) 50%,var(--border));background:color-mix(in srgb,var(--orange) 8%,var(--card));}
     .entry-player-block.is-busted-out{border-color:var(--border);background:var(--surface);opacity:.55;}
     .entry-player-block.is-reentered{border-color:var(--gold-dim);background:color-mix(in srgb,var(--gold) 6%,var(--card));}
 
@@ -140,6 +141,9 @@
     .btn-bust-r{flex:1;padding:10px 6px;background:color-mix(in srgb,var(--red) 8%,var(--surface));border:1px solid var(--red-dim);color:var(--red);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
     .btn-bust-r.sel{background:var(--red);color:#fff;border-color:var(--red);}
     .btn-bust-r:disabled{opacity:.3;cursor:not-allowed;}
+    .btn-scute{flex:1;padding:10px 6px;background:color-mix(in srgb,var(--orange) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--orange) 50%,var(--border));color:var(--orange);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .btn-scute.sel{background:var(--orange);color:#fff;border-color:var(--orange);}
+    .btn-scute:disabled{opacity:.3;cursor:not-allowed;}
 
     .busted-out-msg{font-size:13px;color:var(--muted);text-align:center;padding:6px 0;}
     .btn-reenter{margin-top:10px;width:100%;padding:9px;background:transparent;border:1px dashed var(--gold-dim);color:var(--orange);border-radius:8px;font-family:'Lato',sans-serif;font-size:13px;cursor:pointer;transition:background .15s;}
@@ -164,6 +168,7 @@
     tr.total-row td{color:var(--gold);font-weight:700;background:var(--surface);font-size:13px;}
     .cw{color:var(--green)!important;font-weight:700;}
     .cb{color:var(--red)!important;font-weight:700;}
+    .cs{color:var(--orange)!important;font-weight:700;}
     .cr{color:var(--orange)!important;font-weight:700;font-style:italic;}
 
     /* History */
@@ -263,8 +268,7 @@
       </div>
       <div class="limit-field">
         <label>Reentry Limit</label>
-        <div class="input-num reentry-display" id="cfg-reentry-display" style="cursor:default;opacity:0.75;font-weight:700;color:var(--orange)">200</div>
-        <input type="hidden" id="cfg-reentry" value="200" />
+        <input type="number" inputmode="numeric" class="input-num" id="cfg-reentry" value="200" min="1" style="color:var(--orange);font-weight:700" />
       </div>
     </div>
     <div class="limits-hint">
@@ -475,7 +479,7 @@ function openGame(id){
 }
 function delHome(e,id){e.stopPropagation();if(confirm('Delete this game?')){delGame(id);renderHome();}}
 function delGame(id){S.games=S.games.filter(g=>g.id!==id);saveGames();}
-function initRI(g){S.ri=Object.fromEntries(g.players.map(p=>[p,{score:'',isWinner:false,isBust:false}]));}
+function initRI(g){S.ri=Object.fromEntries(g.players.map(p=>[p,{score:'',isWinner:false,isBust:false,isScute:false}]));}
 
 // ── New Game ──────────────────────────────────
 function renderNewGame(){
@@ -494,6 +498,8 @@ function renderNewGame(){
     document.getElementById('cfg-game-bust').value=250;
     setSM(true);
   }
+  const rel=document.getElementById('cfg-reentry');
+  if(rel) delete rel.dataset.userEdited;
   updateReentryDisplay();
   renderPF();
   document.getElementById('btn-copy-players').style.display=S.games.length>1?'block':'none';
@@ -501,9 +507,17 @@ function renderNewGame(){
 function updateReentryDisplay(){
   const gb=parseInt(document.getElementById('cfg-game-bust').value)||250;
   const rs=Math.round(gb*0.8);
-  document.getElementById('cfg-reentry-display').textContent=rs;
-  document.getElementById('cfg-reentry').value=rs;
+  const el=document.getElementById('cfg-reentry');
+  // only auto-fill if user hasn't manually edited it (or it's empty)
+  if(!el.dataset.userEdited) el.value=rs;
 }
+// mark reentry field as user-edited when they type in it
+document.addEventListener('DOMContentLoaded',()=>{
+  const el=document.getElementById('cfg-reentry');
+  if(el){
+    el.addEventListener('input',()=>{ el.dataset.userEdited='1'; });
+  }
+});
 function renderPF(){
   const list=document.getElementById('players-list');
   const c=S.ngPlayers.length;
@@ -564,6 +578,8 @@ function copyFrom(id){
   const cfg=g.cfg||{};
   document.getElementById('cfg-round-bust').value=cfg.roundBust||80;
   document.getElementById('cfg-game-bust').value=cfg.gameBust||250;
+  const rel2=document.getElementById('cfg-reentry');
+  if(rel2) delete rel2.dataset.userEdited;
   updateReentryDisplay();
   renderPF();closeCopy();toast('Players & settings copied ✓');
 }
@@ -621,12 +637,15 @@ function renderEntry(){
       let bc='entry-player-block';
       if(inp.isWinner)bc+=' is-winner';
       else if(inp.isBust)bc+=' is-bust';
+      else if(inp.isScute)bc+=' is-scute';
       else if(re>0)bc+=' is-reentered';
 
-      const sv=inp.isWinner?'0':inp.isBust?(g.cfg?.roundBust||80):(inp.score||'');
-      const dis=inp.isWinner||inp.isBust?'disabled':'';
+      const sv=inp.isWinner?'0':inp.isBust?(g.cfg?.roundBust||80):inp.isScute?'25':(inp.score||'');
+      const dis=inp.isWinner||inp.isBust||inp.isScute?'disabled':'';
       const wsel=inp.isWinner?'sel':'';
+      const ssel=inp.isScute?'sel':'';
       const bsel=inp.isBust?'sel':'';
+      const anyActive=inp.isWinner||inp.isBust||inp.isScute;
 
       let badge='';
       if(re>0)badge=`<span class="status-badge badge-re">↩×${re}</span>`;
@@ -640,8 +659,9 @@ function renderEntry(){
         <div class="entry-score-row">
           <input type="number" inputmode="numeric" class="input-score" placeholder="0"
             value="${sv}" ${dis} oninput="S.ri['${escJ(p)}'].score=this.value"/>
-          <button class="btn-won ${wsel}" onclick="toggleWin('${escJ(p)}')" ${inp.isBust?'disabled':''}>🏆 Won</button>
-          <button class="btn-bust-r ${bsel}" onclick="toggleBust('${escJ(p)}')" ${inp.isWinner?'disabled':''}>💥 Bust</button>
+          <button class="btn-won ${wsel}" onclick="toggleWin('${escJ(p)}')" ${inp.isBust||inp.isScute?'disabled':''}>🏆 Won</button>
+          <button class="btn-scute ${ssel}" onclick="toggleScute('${escJ(p)}')" ${inp.isWinner||inp.isBust?'disabled':''}>🃏 Scute</button>
+          <button class="btn-bust-r ${bsel}" onclick="toggleBust('${escJ(p)}')" ${inp.isWinner||inp.isScute?'disabled':''}>💥 Bust</button>
         </div>
       </div>`;
     }
@@ -653,12 +673,17 @@ function toggleWin(p){
   const was=S.ri[p].isWinner;
   // clear all winners first
   game().players.forEach(x=>{if(S.ri[x].isWinner)S.ri[x]={...S.ri[x],isWinner:false,score:''};});
-  if(!was) S.ri[p]={...S.ri[p],isWinner:true,isBust:false,score:'0'};
+  if(!was) S.ri[p]={...S.ri[p],isWinner:true,isBust:false,isScute:false,score:'0'};
   renderEntry();
 }
 function toggleBust(p){
   const was=S.ri[p].isBust;
-  S.ri[p]={...S.ri[p],isBust:!was,isWinner:false,score:was?'':(game().cfg?.roundBust||80)};
+  S.ri[p]={...S.ri[p],isBust:!was,isWinner:false,isScute:false,score:was?'':(game().cfg?.roundBust||80)};
+  renderEntry();
+}
+function toggleScute(p){
+  const was=S.ri[p].isScute;
+  S.ri[p]={...S.ri[p],isScute:!was,isWinner:false,isBust:false,score:was?'':'25'};
   renderEntry();
 }
 
@@ -672,11 +697,12 @@ function addRound(){
     let score;
     if(inp.isWinner) score=0;
     else if(inp.isBust) score=cfg.roundBust||80;
+    else if(inp.isScute) score=25;
     else{
       score=parseInt(inp.score,10);
       if(isNaN(score)){toast(`Enter score for ${p}`);return;}
     }
-    scores[p]={score,isWinner:!!inp.isWinner,isBust:!!inp.isBust};
+    scores[p]={score,isWinner:!!inp.isWinner,isBust:!!inp.isBust,isScute:!!inp.isScute};
   }
   // detect game busts
   const ct=totals(g);
@@ -691,7 +717,27 @@ function addRound(){
   document.getElementById('round-badge').textContent=`Round ${game().rounds.length+1}`;
   const bustedNow=Object.entries(scores).filter(([,v])=>v.gameBust).map(([p])=>p);
   if(bustedNow.length) toast(`${bustedNow.join(', ')} eliminated! 💥`);
-  else toast('Round added ✓');
+  else toast('Round added \u2713');
+
+  // Auto-end: if only one (or zero) active player remains and no reentries are possible
+  const updatedGame=game();
+  const activePlayers=updatedGame.players.filter(p=>!isBustedOut(updatedGame,p));
+  const anyCanReenter=updatedGame.players.some(p=>canReenter(updatedGame,p));
+
+  if(activePlayers.length<=1&&!anyCanReenter){
+    setTimeout(()=>{
+      const idx=S.games.findIndex(gg=>gg.id===S.activeId);
+      if(idx===-1)return;
+      S.games[idx]=Object.assign({},S.games[idx],{finished:true,autoFinished:true});
+      saveGames();
+      const finishedId=S.activeId;
+      S.activeId=null;
+      renderSummary(finishedId);
+      goTo('summary');
+    },900);
+    return;
+  }
+
   renderEntry();
 }
 
@@ -804,6 +850,7 @@ function renderScores(){
           if(e.isWinner)return`<td class="cw">🏆0</td>`;
           if(e.gameBust)return`<td class="cb">💥${e.score}</td>`;
           if(e.isBust)return`<td class="cb">B${e.score}</td>`;
+          if(e.isScute)return`<td class="cs">S${e.score}</td>`;
           return`<td>${e.score}</td>`;
         }).join('')}
       </tr>`;
@@ -876,6 +923,7 @@ function renderSummary(gameId){
       <div class="summary-trophy">🏆</div>
       <div class="summary-winner-name">${esc(winner)}</div>
       <div class="summary-winner-sub">Winner · ${t[winner]} points</div>
+      ${g.autoFinished?'<div style="margin-top:8px;font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px">Last player standing 🃏</div>':''}
     </div>
 
     <div class="summary-stats-row">
