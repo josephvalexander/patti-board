@@ -1,12 +1,15 @@
 // sw.js — Service Worker for Pattiboard
 // VERSION is embedded in index.html and checked on every load.
 // When index.html changes (new deploy), the SW re-installs and clears old cache.
-const CACHE = 'pattiboard-20260318040637';
+const CACHE = 'pattiboard-202603160624';
 
 const STATIC = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
+  './favicon.ico',
+  './favicon-32.png',
+  './favicon-16.png',
   'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Lato:wght@300;400;700&display=swap'
 ];
 
