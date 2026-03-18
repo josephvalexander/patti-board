@@ -236,7 +236,44 @@
   <div id="screen-home" class="screen active">
     <div class="home-header">
       <button class="btn-theme" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
-      <img src="./icon-192.png" alt="Pattiboard" style="width:72px;height:72px;border-radius:18px;box-shadow:0 4px 20px #00000055;margin-bottom:10px" />
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80" style="margin-bottom:10px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.55))">
+  <!-- rounded background -->
+  <rect width="80" height="80" rx="18" fill="url(#bg_grad)"/>
+  <defs>
+    <linearGradient id="bg_grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f0c06"/>
+      <stop offset="100%" stop-color="#1e1608"/>
+    </linearGradient>
+  </defs>
+  <!-- left card -->
+  <g transform="rotate(-20,40,46)">
+    <rect x="20" y="24" width="30" height="42" rx="3" fill="#fffae6" stroke="#a07820" stroke-width="1"/>
+  </g>
+  <!-- right card -->
+  <g transform="rotate(20,40,46)">
+    <rect x="30" y="24" width="30" height="42" rx="3" fill="#fffae6" stroke="#a07820" stroke-width="1"/>
+  </g>
+  <!-- front card shadow -->
+  <rect x="21" y="29" width="38" height="46" rx="4" fill="rgba(0,0,0,0.25)"/>
+  <!-- front card -->
+  <rect x="21" y="27" width="38" height="46" rx="4" fill="#fffae8"/>
+  <rect x="22.5" y="28.5" width="35" height="43" rx="3" fill="none" stroke="#b08828" stroke-width="1"/>
+  <!-- centre spade -->
+  <text x="40" y="55" font-family="serif" font-size="18" fill="#c9a84c" text-anchor="middle" dominant-baseline="middle">♠</text>
+  <!-- corner pips -->
+  <text x="26" y="35" font-family="serif" font-size="8" fill="#c0392b" text-anchor="middle">♥</text>
+  <text x="54" y="35" font-family="serif" font-size="8" fill="#c9a84c" text-anchor="middle">♠</text>
+  <text x="26" y="67" font-family="serif" font-size="8" fill="#c9a84c" text-anchor="middle">♣</text>
+  <text x="54" y="67" font-family="serif" font-size="8" fill="#c0392b" text-anchor="middle">♦</text>
+  <!-- P badge outer gold ring -->
+  <circle cx="40" cy="16" r="13" fill="#c9a84c"/>
+  <!-- P badge inner dark -->
+  <circle cx="40" cy="16" r="10.5" fill="#120e05"/>
+  <!-- P badge inner ring -->
+  <circle cx="40" cy="16" r="9" fill="none" stroke="#7a5c10" stroke-width="0.8"/>
+  <!-- P letter -->
+  <text x="40" y="16" font-family="DejaVu Sans, Arial, sans-serif" font-weight="bold" font-size="12" fill="#f0c060" text-anchor="middle" dominant-baseline="middle">P</text>
+</svg>
       <h1 class="app-title">Pattiboard</h1>
       <p class="app-subtitle">Rummy Score Tracker</p>
     </div>
