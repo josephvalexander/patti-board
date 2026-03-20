@@ -1,7 +1,7 @@
 {
-  "name": "Pattiboard",
-  "short_name": "Pattiboard",
-  "description": "Track rummy scores with your friends. Bust limits, reentry, and full game history.",
+  "name": "Kattanum Rummiyum",
+  "short_name": "കട്ടനും",
+  "description": "Track rummy scores for Kattanum Rummiyum — bust limits, reentry, and full game history.",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
