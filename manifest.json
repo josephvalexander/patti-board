@@ -1,6 +1,6 @@
 {
   "name": "Kattanum Rummiyum",
-  "short_name": "കട്ടനും",
+  "short_name": "കട്ടനും റമ്മിയും",
   "description": "Track rummy scores for Kattanum Rummiyum — bust limits, reentry, and full game history.",
   "start_url": "./index.html",
   "display": "standalone",

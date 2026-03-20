@@ -237,15 +237,17 @@
 
     /* ── Radio Player ── */
     #radio-pp-fab{
-      position:fixed;bottom:86px;right:16px;z-index:400;
-      width:40px;height:40px;border-radius:50%;
-      background:var(--card);border:1.5px solid var(--gold-dim);
+      position:fixed;bottom:88px;right:16px;z-index:400;
+      width:44px;height:44px;border-radius:50%;
+      background:linear-gradient(145deg,#1a1610,#2a2318);
+      border:2px solid var(--gold);
       cursor:pointer;padding:0;
-      box-shadow:0 2px 10px rgba(0,0,0,.4);
+      box-shadow:0 3px 14px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.25);
       display:flex;align-items:center;justify-content:center;
-      transition:transform .15s,opacity .2s;
+      transition:transform .15s,box-shadow .15s;
     }
-    #radio-pp-fab:active{transform:scale(.9);}
+    #radio-pp-fab:active{transform:scale(.88);}
+    #radio-pp-fab:hover{box-shadow:0 4px 18px rgba(0,0,0,.7),0 0 0 2px rgba(201,168,76,.5);}
     #radio-fab{
       position:fixed;bottom:22px;right:16px;z-index:400;
       width:54px;height:54px;border-radius:50%;
@@ -501,7 +503,7 @@
 <!-- Radio play/pause mini-FAB (shows only when playing & panel closed) -->
 <button id="radio-pp-fab" onclick="radioPlayPause()" title="Play / Pause" style="display:none">
   <svg id="radio-pp-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
-    <polygon points="5,3 19,11 5,19" fill="#1a1208"/>
+    <polygon points="5,3 19,11 5,19" fill="#c9a84c"/>
   </svg>
 </button>
 
@@ -1396,18 +1398,11 @@ function radioUpdateFAB(){
     <rect x="17" y="14.5" width="5.5" height="2" rx="1" fill="#1a1208" opacity="0.4"/>
     <circle cx="20.5" cy="20" r="1.8" fill="#1a1208" opacity="0.6"/>
   </svg>`;
-  if(R.playing){
-    fab.classList.add('playing');
-    fab.innerHTML = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <rect x="4" y="3" width="5" height="16" rx="1.5" fill="#1a1208"/>
-      <rect x="13" y="3" width="5" height="16" rx="1.5" fill="#1a1208"/>
-    </svg>`;
-    btn.textContent = '⏸';
-  } else {
-    fab.classList.remove('playing');
-    fab.innerHTML = radioFabSVG;
-    btn.textContent = '▶';
-  }
+  // Main FAB icon never changes — always shows the radio icon
+  fab.innerHTML = radioFabSVG;
+  // Pulse animation on/off to indicate playing state subtly
+  fab.classList.toggle('playing', R.playing);
+  btn.textContent = R.playing ? '⏸' : '▶';
   radioUpdatePPFab();
 }
 
@@ -1503,25 +1498,30 @@ function radioUpdatePPFab(){
     const icon = document.getElementById('radio-pp-icon');
     if(R.playing){
       // pause icon
-      icon.innerHTML = '<rect x="4" y="3" width="5" height="16" rx="1" fill="#1a1208"/><rect x="13" y="3" width="5" height="16" rx="1" fill="#1a1208"/>';
+      icon.innerHTML = '<rect x="4" y="3" width="5" height="16" rx="1" fill="#c9a84c"/><rect x="13" y="3" width="5" height="16" rx="1" fill="#c9a84c"/>';
     } else {
       // play icon
-      icon.innerHTML = '<polygon points="5,3 19,11 5,19" fill="#1a1208"/>';
+      icon.innerHTML = '<polygon points="5,3 19,11 5,19" fill="#c9a84c"/>';
     }
   }
 }
 
 // Close radio panel when clicking outside of it
+// Using stopPropagation on the panel so internal clicks never reach document
+document.getElementById('radio-panel').addEventListener('click', (e) => {
+  e.stopPropagation();
+});
+document.getElementById('radio-fab').addEventListener('click', (e) => {
+  e.stopPropagation();
+});
+document.getElementById('radio-pp-fab').addEventListener('click', (e) => {
+  e.stopPropagation();
+});
 document.addEventListener('click', (e) => {
   if(!R.panelOpen) return;
-  const panel = document.getElementById('radio-panel');
-  const fab   = document.getElementById('radio-fab');
-  const ppFab = document.getElementById('radio-pp-fab');
-  if(!panel.contains(e.target) && !fab.contains(e.target) && !ppFab.contains(e.target)){
-    R.panelOpen = false;
-    panel.classList.remove('open');
-    radioUpdatePPFab();
-  }
+  R.panelOpen = false;
+  document.getElementById('radio-panel').classList.remove('open');
+  radioUpdatePPFab();
 });
 
 renderHome();
