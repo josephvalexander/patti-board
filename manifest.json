@@ -1,13 +1,24 @@
 {
-  "name": "Kattanum Rummiyum",
-  "short_name": "കട്ടനും റമ്മിയും",
-  "description": "Track rummy scores for Kattanum Rummiyum — bust limits, reentry, and full game history.",
+  "name": "കട്ടനും റമ്മിയും",
+  "short_name": "റമ്മി scorer",
+  "description": "Rummy score tracker with bust limits, reentry support and full game history. Perfect for Kerala card game sessions.",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f0c08",
   "theme_color": "#0f0c08",
+  "lang": "ml",
   "icons": [
+    {
+      "src": "favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
     {
       "src": "icon-192.png",
       "sizes": "192x192",
