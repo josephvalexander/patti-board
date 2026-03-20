@@ -307,6 +307,16 @@
     .rp-station-check{color:var(--gold);font-size:14px;flex-shrink:0;}
 
     .rp-loading{text-align:center;padding:20px;color:var(--muted);font-size:13px;}
+    .rp-lang-bar{display:flex;gap:0;border-bottom:1px solid var(--border);}
+    .rp-lang-btn{
+      flex:1;padding:8px 4px;background:transparent;border:none;
+      color:var(--muted);font-family:'Lato',sans-serif;font-size:12px;
+      font-weight:700;cursor:pointer;letter-spacing:.5px;
+      border-bottom:2px solid transparent;margin-bottom:-1px;
+      transition:color .15s,border-color .15s;
+    }
+    .rp-lang-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+    .rp-lang-btn:hover:not(.active){color:var(--text);}
     .rp-error{text-align:center;padding:16px;color:var(--red);font-size:12px;line-height:1.5;}
     .rp-retry{margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--gold);border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'Lato',sans-serif;font-size:12px;}
     ::-webkit-scrollbar{width:4px;}
@@ -505,8 +515,13 @@
 <div id="radio-panel">
   <div class="rp-header">
     <span style="font-size:18px">📻</span>
-    <span class="rp-title">Malayalam Radio</span>
+    <span class="rp-title" id="rp-title">Malayalam Radio</span>
     <button class="rp-close" onclick="toggleRadioPanel()">✕</button>
+  </div>
+  <div class="rp-lang-bar">
+    <button class="rp-lang-btn active" id="rp-lang-ml" onclick="radioSetLang('malayalam','Malayalam')">Malayalam</button>
+    <button class="rp-lang-btn" id="rp-lang-ta" onclick="radioSetLang('tamil','Tamil')">Tamil</button>
+    <button class="rp-lang-btn" id="rp-lang-hi" onclick="radioSetLang('hindi','Hindi')">Hindi</button>
   </div>
   <div class="rp-now">
     <div class="rp-station-name" id="rp-station-name">Select a station below</div>
@@ -1175,36 +1190,50 @@ function toggleTheme(){
 // ── Radio Player ──────────────────────────────
 const R = {
   stations: [],
-  current: null,       // currently loaded station object
+  current: null,
   playing: false,
   loaded: false,
   panelOpen: false,
+  language: 'malayalam',   // active language filter
 };
 
 const radioAudio = document.getElementById('radio-audio');
 
-// Fallback hardcoded Malayalam stations in case API is down
-const FALLBACK_STATIONS = [
-  { name:'Club FM 94.3',       url:'http://playerservices.streamtheworld.com/api/livestream-redirect/CLUBFMUAEAAC.aac', tags:'pop hits', bitrate:128 },
-  { name:'Radio Mango 91.9',   url:'http://stream.radiomango.fm:9966/', tags:'malayalam', bitrate:64 },
-  { name:'AIR Ananthapuri FM', url:'https://air.pc.cdn.bitgravity.com/air/live/pbaudio113/chunklist.m3u8', tags:'classical folk', bitrate:48 },
-  { name:'Radio City 91.9',    url:'http://prclive1.listenon.in:9908/', tags:'malayalam pop', bitrate:64 },
-  { name:'Kochi Rainbow FM',   url:'https://air.pc.cdn.bitgravity.com/air/live/pbaudio131/chunklist.m3u8', tags:'air kerala', bitrate:48 },
-];
+// Fallback stations per language in case API is down
+const FALLBACK_STATIONS = {
+  malayalam: [
+    { name:'Club FM 94.3',       url:'http://playerservices.streamtheworld.com/api/livestream-redirect/CLUBFMUAEAAC.aac', tags:'pop hits', bitrate:128 },
+    { name:'Radio Mango 91.9',   url:'http://stream.radiomango.fm:9966/', tags:'malayalam', bitrate:64 },
+    { name:'AIR Ananthapuri FM', url:'https://air.pc.cdn.bitgravity.com/air/live/pbaudio113/chunklist.m3u8', tags:'classical folk', bitrate:48 },
+    { name:'Radio City 91.9',    url:'http://prclive1.listenon.in:9908/', tags:'malayalam pop', bitrate:64 },
+    { name:'Kochi Rainbow FM',   url:'https://air.pc.cdn.bitgravity.com/air/live/pbaudio131/chunklist.m3u8', tags:'air kerala', bitrate:48 },
+  ],
+  tamil: [
+    { name:'Suryan FM 93.5',     url:'http://uk5.internet-radio.com:8116/', tags:'tamil pop', bitrate:128 },
+    { name:'Hello FM 106.4',     url:'http://sc3.radiotools.net:8040/', tags:'tamil hits', bitrate:64 },
+    { name:'AIR Chennai FM',     url:'https://air.pc.cdn.bitgravity.com/air/live/pbaudio001/chunklist.m3u8', tags:'classical', bitrate:48 },
+  ],
+  hindi: [
+    { name:'Radio Mirchi 98.3',  url:'http://prclive1.listenon.in:9992/', tags:'bollywood hits', bitrate:128 },
+    { name:'Big FM 92.7',        url:'http://prclive3.listenon.in:9992/', tags:'hindi pop', bitrate:64 },
+    { name:'AIR Vividh Bharati', url:'https://air.pc.cdn.bitgravity.com/air/live/pbaudio007/chunklist.m3u8', tags:'hindi classical', bitrate:48 },
+  ],
+};
 
-async function radioLoadStations(){
+async function radioLoadStations(lang){
+  if(lang) R.language = lang;
   const list = document.getElementById('rp-stations');
+  list.innerHTML = '<div class="rp-loading">Loading stations…</div>';
+  const cc = (R.language === 'malayalam' || R.language === 'tamil') ? 'IN' : 'IN';
   try {
-    // Radio Browser API — search malayalam language stations, sorted by votes
     const res = await fetch(
       'https://de1.api.radio-browser.info/json/stations/search?' +
-      new URLSearchParams({language:'malayalam', countrycode:'IN', hidebroken:'true',
-                           order:'votes', reverse:'true', limit:'30'}),
-      { headers:{'User-Agent':'Pattiboard/1.0'} }
+      new URLSearchParams({language: R.language, countrycode: cc,
+                           hidebroken:'true', order:'votes', reverse:'true', limit:'30'}),
+      { headers:{'User-Agent':'KattanumRummiyum/1.0'} }
     );
     if(!res.ok) throw new Error('API error');
     const data = await res.json();
-    // filter: must have a url_resolved
     R.stations = data
       .filter(s => s.url_resolved || s.url)
       .map(s => ({
@@ -1219,10 +1248,23 @@ async function radioLoadStations(){
     if(!R.stations.length) throw new Error('No stations');
   } catch(e) {
     console.log('Radio Browser API failed, using fallback:', e);
-    R.stations = FALLBACK_STATIONS;
+    R.stations = FALLBACK_STATIONS[R.language] || FALLBACK_STATIONS.malayalam;
   }
   R.loaded = true;
   radioRenderList();
+}
+
+function radioSetLang(lang, label){
+  R.language = lang;
+  R.loaded = false;
+  // update tab active states
+  ['ml','ta','hi'].forEach(k => document.getElementById('rp-lang-'+k).classList.remove('active'));
+  const keyMap = {malayalam:'ml', tamil:'ta', hindi:'hi'};
+  const el = document.getElementById('rp-lang-' + (keyMap[lang]||'ml'));
+  if(el) el.classList.add('active');
+  // update panel title
+  document.getElementById('rp-title').textContent = label + ' Radio';
+  radioLoadStations(lang);
 }
 
 function radioRenderList(){
