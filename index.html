@@ -448,7 +448,7 @@
     <div class="limits-hint">
       <div class="hint-line"><strong>Round Bust:</strong> Points auto-assigned when the 💥 Bust button is tapped</div>
       <div class="hint-line"><strong>Game Bust:</strong> Player is eliminated when their cumulative score exceeds this</div>
-      <div class="hint-line"><strong>Reentry Limit:</strong> Eliminated player may reenter only if next highest active total is strictly below this value, and only in the very next round after being eliminated</div>
+      <div class="hint-line"><strong>Reentry Limit:</strong> Eliminated player may reenter in any future round as long as the next highest active total is strictly below this value</div>
       <div class="hint-line"><strong>Reentry score</strong> is always set to 80% of Game Bust automatically</div>
     </div>
     <button class="btn-ghost" id="btn-copy-players" onclick="openCopyModal()" style="display:none">📋 Load players from a different game</button>
@@ -678,12 +678,8 @@ function ranked(g){
 
 function canReenter(g,p){
   if(!isBustedOut(g,p))return false;
-  // Reentry only allowed in the round immediately after bust (last round must be the bust round)
-  const lastRound=g.rounds[g.rounds.length-1];
-  if(!lastRound)return false;
-  const lastEntry=lastRound.scores[p];
-  if(!lastEntry||!lastEntry.gameBust)return false; // bust must have happened last round
-  // Next highest active score must be strictly below the reentry limit
+  // Reentry allowed in ANY future round after elimination (not just the next one)
+  // Rule: next highest active score must be strictly below the reentry limit
   const cfg=g.cfg||{};const t=totals(g);
   const actives=g.players.filter(x=>x!==p&&!isBustedOut(g,x)).map(x=>t[x]);
   if(!actives.length)return false;
@@ -731,14 +727,22 @@ function renderNewGame(){
     document.getElementById('cfg-round-bust').value=cfg.roundBust||80;
     document.getElementById('cfg-game-bust').value=cfg.gameBust||250;
     setSM(last.lowerWins);
+    // prefill reentry from last game if user had manually set it,
+    // otherwise let updateReentryDisplay compute 80% of gameBust
+    const rel=document.getElementById('cfg-reentry');
+    if(cfg.reentryAt){
+      rel.value=cfg.reentryAt;
+      rel.dataset.userEdited='1'; // treat as user-set so it doesn't get overwritten
+    } else {
+      delete rel.dataset.userEdited;
+    }
   } else {
     S.ngPlayers=['','','',''];
     document.getElementById('cfg-round-bust').value=80;
     document.getElementById('cfg-game-bust').value=250;
-    setSM(true);
+    const rel=document.getElementById('cfg-reentry');
+    if(rel) delete rel.dataset.userEdited;
   }
-  const rel=document.getElementById('cfg-reentry');
-  if(rel) delete rel.dataset.userEdited;
   updateReentryDisplay();
   renderPF();
   document.getElementById('btn-copy-players').style.display=S.games.length>1?'block':'none';
