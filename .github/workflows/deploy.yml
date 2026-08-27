@@ -1,4 +1,4 @@
-name: Deploy Pattiboard
+name: Deploy കട്ടനും റമ്മിയും
 
 on:
   push:
@@ -14,17 +14,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Stamp version into sw.js
+      - name: Stamp version into sw.js and index.html
         run: |
           VERSION=$(date -u +"%Y%m%d%H%M%S")
           echo "Stamping version: $VERSION"
-          sed -i "s/const CACHE = 'pattiboard-[^']*'/const CACHE = 'pattiboard-$VERSION'/" sw.js
-          grep "const CACHE" sw.js
 
-      - name: Commit updated sw.js
+          # 1. Update CACHE name in sw.js
+          sed -i "s/const CACHE = 'pattiboard-[^']*'/const CACHE = 'pattiboard-$VERSION'/" sw.js
+          sed -i "s/const VERSION = '[^']*'/const VERSION = '$VERSION'/" sw.js
+
+          # 2. Update APP_VERSION in index.html to match
+          sed -i "s/const APP_VERSION = '[^']*'/const APP_VERSION = '$VERSION'/" index.html
+
+          # 3. Update version.json — this is what old SWs check to detect stale versions
+          echo "{\"version\":\"$VERSION\"}" > version.json
+
+          echo "sw.js CACHE:"; grep "const CACHE" sw.js
+          echo "index.html APP_VERSION:"; grep "const APP_VERSION" index.html
+          echo "version.json:"; cat version.json
+
+      - name: Commit stamped files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add sw.js
-          git diff --staged --quiet || git commit -m "chore: auto-stamp cache version [skip ci]"
+          git add sw.js index.html version.json
+          git diff --staged --quiet || git commit -m "chore: auto-stamp version $VERSION [skip ci]"
           git push

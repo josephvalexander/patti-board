@@ -1557,37 +1557,71 @@ document.addEventListener('click', (e) => {
 renderHome();
 
 // ── Service Worker + Auto-update ──────────────
-const APP_VERSION = '202603160624';
+const APP_VERSION = '20260827045728';
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
+  // updateViaCache:'none' = browser always re-fetches sw.js from network (fixes Android/OnePlus caching)
+  navigator.serviceWorker.register('./sw.js', {updateViaCache: 'none', scope: './'})
+    .then(reg => {
+      // Force update check on every page load
+      reg.update().catch(()=>{});
 
-      // Check for updates every time the page loads
-      reg.update();
-
-      // When a new SW is waiting, show a toast and reload automatically
+      // New SW found — send skipWaiting once installed
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
+        if (!newSW) return;
         newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            // New version ready — tell the waiting SW to take over, then reload
-            newSW.postMessage('SKIP_WAITING');
+          if (newSW.state === 'installed') {
+            newSW.postMessage({type:'SKIP_WAITING'});
           }
         });
       });
 
-      // When the SW has taken control (after skipWaiting), reload the page
+      // controllerchange — new SW took control, reload once
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          toast('✨ App updated! Reloading...');
-          setTimeout(() => window.location.reload(), 1200);
-        }
+        if (refreshing || sessionStorage.getItem('sw_reloading')) return;
+        refreshing = true;
+        sessionStorage.setItem('sw_reloading','1');
+        toast('✨ App updated! Reloading...');
+        setTimeout(() => window.location.reload(true), 1200);
       });
 
-    }).catch(e => console.log('SW registration failed', e));
+    }).catch(e => console.log('[SW] Registration failed:', e));
+
+  // ── Message handler — works for BOTH old and new installed SWs ──────
+  // FORCE_UPDATE: the currently running SW fetched version.json (always
+  //   uncached) and detected a newer version exists. This fires even when
+  //   the old SW was registered without updateViaCache:none — because the
+  //   SW itself does the version.json fetch. Page unregisters the stale SW
+  //   and hard-reloads so a fresh SW can register.
+  // SW_ACTIVATED: new SW just took control, bump the stored version.
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (!e.data || sessionStorage.getItem('sw_reloading')) return;
+
+    if (e.data.type === 'FORCE_UPDATE') {
+      sessionStorage.setItem('sw_reloading','1');
+      toast('✨ New update available! Reloading...');
+      navigator.serviceWorker.getRegistration()
+        .then(reg => { if (reg) return reg.unregister(); })
+        .finally(() => setTimeout(() => window.location.reload(true), 1400));
+    }
+
+    if (e.data.type === 'SW_ACTIVATED') {
+      const prev = localStorage.getItem('app_version_cache');
+      if (prev && prev !== e.data.version) {
+        sessionStorage.setItem('sw_reloading','1');
+        toast('✨ App updated! Reloading...');
+        setTimeout(() => window.location.reload(true), 1200);
+      }
+      localStorage.setItem('app_version_cache', e.data.version);
+    }
+  });
+
+  // Clear reload guard and store current version after full page load
+  window.addEventListener('load', () => {
+    sessionStorage.removeItem('sw_reloading');
+    localStorage.setItem('app_version_cache', APP_VERSION);
   });
 }
 </script>
