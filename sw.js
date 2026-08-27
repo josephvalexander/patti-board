@@ -1,6 +1,6 @@
 // sw.js — Service Worker for കട്ടനും റമ്മിയും
-const CACHE = 'pattiboard-20260827050040';
-const VERSION = '20260827050040';
+const CACHE = 'pattiboard-20260827050403';
+const VERSION = '20260827050403';
 
 const STATIC = [
   './manifest.json',
