@@ -8,16 +8,22 @@ const STATIC = [
   './icon-512.png',
   './favicon.ico',
   './favicon-32.png',
-  './favicon-16.png',
-  'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Lato:wght@300;400;700&family=Noto+Sans+Malayalam:wght@400;700;900&display=swap'
+  './favicon-16.png'
+  // Note: Google Fonts not cached here — cross-origin pre-caching causes SW install failures.
+  // Fonts load from network normally and cache themselves on first use.
 ];
 
 // Install: pre-cache static assets and activate immediately
+// Uses individual fetches instead of addAll so one failure doesn't kill the install
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(STATIC))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then(cache => {
+      // Cache each asset individually — if one fails (e.g. fonts offline), skip it
+      const cacheOne = url => fetch(url, {mode:'no-cors'})
+        .then(res => { if (res.type !== 'error') cache.put(url, res); })
+        .catch(() => {}); // silently skip failed assets
+      return Promise.all(STATIC.map(cacheOne));
+    }).then(() => self.skipWaiting())
   );
 });
 
