@@ -1,6 +1,6 @@
 // sw.js — Service Worker for കട്ടനും റമ്മിയും
-const CACHE = 'pattiboard-20260827050403';
-const VERSION = '20260827050403';
+const CACHE = 'pattiboard-20260827045728';
+const VERSION = '20260827045728';
 
 const STATIC = [
   './manifest.json',
@@ -71,6 +71,9 @@ async function checkVersionAndNotify() {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   const path = url.pathname;
+
+  // Only handle http/https — ignore chrome-extension://, data:, etc.
+  if (!url.protocol.startsWith('http')) return;
 
   // Never cache sw.js or version.json
   if (path.endsWith('sw.js') || path.endsWith('version.json')) {
